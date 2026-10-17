@@ -42,6 +42,18 @@
             <artifactId>ruoyi-framework</artifactId>
         </dependency>
 
+        <!-- 期权业务模块 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-option</artifactId>
+        </dependency>
+
+        <!-- 开源工具模块-->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-core</artifactId>
+        </dependency>
+
         <!-- 定时任务-->
         <dependency>
             <groupId>com.ruoyi</groupId>

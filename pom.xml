@@ -163,6 +163,20 @@
                 <version>${ruoyi.version}</version>
             </dependency>
 
+            <!-- 开源工具模块-->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-core</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+
+            <!-- 期权业务模块 -->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-option</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+
             <!-- 通用工具-->
             <dependency>
                 <groupId>com.ruoyi</groupId>
@@ -177,6 +191,8 @@
         <module>ruoyi-admin</module>
         <module>ruoyi-framework</module>
         <module>ruoyi-system</module>
+        <module>ruoyi-core</module>
+        <module>ruoyi-option</module>
         <module>ruoyi-quartz</module>
         <module>ruoyi-generator</module>
         <module>ruoyi-common</module>
