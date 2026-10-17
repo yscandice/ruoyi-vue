@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.option.mapper.OptionTodaySnapshotMapper">
+    <resultMap id="OptionTodaySnapshotResult" type="com.ruoyi.option.domain.OptionTodaySnapshot">
+        <id property="snapshotId" column="snapshot_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="businessDate" column="business_date"/>
+        <result property="payload" column="raw_payload"/>
+        <result property="sourceEtag" column="source_etag"/>
+        <result property="generatedAt" column="source_generated_at"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <select id="selectSnapshot" resultMap="OptionTodaySnapshotResult">
+        SELECT snapshot_id, user_id, business_date, raw_payload, source_etag, source_generated_at,
+               create_by, create_time, update_by, update_time, remark
+        FROM
+        <choose>
+            <when test="resourceKey == 'feed'">option_feed</when>
+            <when test="resourceKey == 'seller-guide'">option_seller_guide</when>
+            <when test="resourceKey == 'entitlement'">option_entitlement</when>
+            <when test="resourceKey == 'decisions'">option_decisions</when>
+            <when test="resourceKey == 'management-choices'">option_management_choices</when>
+            <when test="resourceKey == 'premarket'">option_premarket</when>
+            <when test="resourceKey == 'updates'">option_updates</when>
+            <when test="resourceKey == 'support'">option_support</when>
+            <otherwise>option_invalid_resource</otherwise>
+        </choose>
+        WHERE user_id = #{userId} AND business_date = #{businessDate}
+        LIMIT 1
+    </select>
+    <insert id="upsertSnapshot" parameterType="com.ruoyi.option.domain.OptionTodaySnapshot"
+            useGeneratedKeys="true" keyProperty="snapshotId">
+        <choose>
+            <when test="resourceKey == 'feed'">
+                INSERT INTO option_feed
+                    (`user_id`, `business_date`, `raw_payload`, `source_etag`, `source_generated_at`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`, `schema_version`, `response_generated_at`, `serverReceivedAt`, `polledAt`, `ageSeconds`, `access`, `mode`, `etDay`, `marketEtDay`, `marketPhase`, `usingPriorTradingDay`, `todayDesk`, `brain`, `publicIntel`, `signals`, `buyerSignals`, `signalGroups`, `signalNews`, `voiceFeed`, `managementCards`, `protections`, `sentProtections`, `buyerAlerts`, `buyerLifecycle`, `buyerExpiryCloses`, `midtermShadowCards`, `withdrawnCards`, `orderIntents`, `settlementCards`, `history`, `historyFingerprint`, `events`, `performance`, `scan`, `source_id`, `status`, `sourceHealth`, `systemStatus`, `terminalHealth`)
+                SELECT
+                    #{userId}, #{businessDate}, source_payload, #{sourceEtag}, #{generatedAt}, #{createBy}, NOW(), #{updateBy}, NOW(), #{remark}, CAST(JSON_EXTRACT(source_payload, '$.schema_version') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.generated_at') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.serverReceivedAt') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.polledAt') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.ageSeconds') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.access') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.mode') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.etDay') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.marketEtDay') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.marketPhase') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.usingPriorTradingDay') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.todayDesk') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.brain') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.publicIntel') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.signals') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.buyerSignals') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.signalGroups') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.signalNews') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.voiceFeed') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.managementCards') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.protections') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.sentProtections') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.buyerAlerts') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.buyerLifecycle') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.buyerExpiryCloses') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.midtermShadowCards') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.withdrawnCards') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.orderIntents') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.settlementCards') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.history') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.historyFingerprint') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.events') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.performance') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.scan') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.source_id') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.status') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.sourceHealth') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.systemStatus') AS JSON), CAST(JSON_EXTRACT(source_payload, '$.terminalHealth') AS JSON)
+                FROM (SELECT #{payload} AS source_payload) AS source
+                ON DUPLICATE KEY UPDATE
+                    raw_payload = VALUES(raw_payload), source_etag = VALUES(source_etag), source_generated_at = VALUES(source_generated_at), update_by = VALUES(update_by), update_time = NOW(), remark = VALUES(remark), `schema_version` = VALUES(`schema_version`), `response_generated_at` = VALUES(`response_generated_at`), `serverReceivedAt` = VALUES(`serverReceivedAt`), `polledAt` = VALUES(`polledAt`), `ageSeconds` = VALUES(`ageSeconds`), `access` = VALUES(`access`), `mode` = VALUES(`mode`), `etDay` = VALUES(`etDay`), `marketEtDay` = VALUES(`marketEtDay`), `marketPhase` = VALUES(`marketPhase`), `usingPriorTradingDay` = VALUES(`usingPriorTradingDay`), `todayDesk` = VALUES(`todayDesk`), `brain` = VALUES(`brain`), `publicIntel` = VALUES(`publicIntel`), `signals` = VALUES(`signals`), `buyerSignals` = VALUES(`buyerSignals`), `signalGroups` = VALUES(`signalGroups`), `signalNews` = VALUES(`signalNews`), `voiceFeed` = VALUES(`voiceFeed`), `managementCards` = VALUES(`managementCards`), `protections` = VALUES(`protections`), `sentProtections` = VALUES(`sentProtections`), `buyerAlerts` = VALUES(`buyerAlerts`), `buyerLifecycle` = VALUES(`buyerLifecycle`), `buyerExpiryCloses` = VALUES(`buyerExpiryCloses`), `midtermShadowCards` = VALUES(`midtermShadowCards`), `withdrawnCards` = VALUES(`withdrawnCards`), `orderIntents` = VALUES(`orderIntents`), `settlementCards` = VALUES(`settlementCards`), `history` = VALUES(`history`), `historyFingerprint` = VALUES(`historyFingerprint`), `events` = VALUES(`events`), `performance` = VALUES(`performance`), `scan` = VALUES(`scan`), `source_id` = VALUES(`source_id`), `status` = VALUES(`status`), `sourceHealth` = VALUES(`sourceHealth`), `systemStatus` = VALUES(`systemStatus`), `terminalHealth` = VALUES(`terminalHealth`)
+            </when>
+            <when test="resourceKey == 'seller-guide'">
+                INSERT INTO option_seller_guide
+                    (`user_id`, `business_date`, `raw_payload`, `source_etag`, `source_generated_at`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`, `completedVersion`, `completedAt`, `currentVersion`, `pending`)
+                VALUES
+                    (#{userId}, #{businessDate}, #{payload}, #{sourceEtag}, #{generatedAt}, #{createBy}, NOW(), #{updateBy}, NOW(), #{remark}, CAST(JSON_EXTRACT(#{payload}, '$.completedVersion') AS JSON), CAST(JSON_EXTRACT(#{payload}, '$.completedAt') AS JSON), CAST(JSON_EXTRACT(#{payload}, '$.currentVersion') AS JSON), CAST(JSON_EXTRACT(#{payload}, '$.pending') AS JSON))
+                ON DUPLICATE KEY UPDATE
+                    raw_payload = VALUES(raw_payload), source_etag = VALUES(source_etag), source_generated_at = VALUES(source_generated_at), update_by = VALUES(update_by), update_time = NOW(), remark = VALUES(remark), `completedVersion` = VALUES(`completedVersion`), `completedAt` = VALUES(`completedAt`), `currentVersion` = VALUES(`currentVersion`), `pending` = VALUES(`pending`)
+            </when>
+            <when test="resourceKey == 'entitlement'">
+                INSERT INTO option_entitlement
+                    (`user_id`, `business_date`, `raw_payload`, `source_etag`, `source_generated_at`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`, `access`)
+                VALUES
+                    (#{userId}, #{businessDate}, #{payload}, #{sourceEtag}, #{generatedAt}, #{createBy}, NOW(), #{updateBy}, NOW(), #{remark}, CAST(JSON_EXTRACT(#{payload}, '$.access') AS JSON))
+                ON DUPLICATE KEY UPDATE
+                    raw_payload = VALUES(raw_payload), source_etag = VALUES(source_etag), source_generated_at = VALUES(source_generated_at), update_by = VALUES(update_by), update_time = NOW(), remark = VALUES(remark), `access` = VALUES(`access`)
+            </when>
+            <when test="resourceKey == 'decisions'">
+                INSERT INTO option_decisions
+                    (`user_id`, `business_date`, `raw_payload`, `source_etag`, `source_generated_at`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`, `latest`, `events`)
+                VALUES
+                    (#{userId}, #{businessDate}, #{payload}, #{sourceEtag}, #{generatedAt}, #{createBy}, NOW(), #{updateBy}, NOW(), #{remark}, CAST(JSON_EXTRACT(#{payload}, '$.latest') AS JSON), CAST(JSON_EXTRACT(#{payload}, '$.events') AS JSON))
+                ON DUPLICATE KEY UPDATE
+                    raw_payload = VALUES(raw_payload), source_etag = VALUES(source_etag), source_generated_at = VALUES(source_generated_at), update_by = VALUES(update_by), update_time = NOW(), remark = VALUES(remark), `latest` = VALUES(`latest`), `events` = VALUES(`events`)
+            </when>
+            <when test="resourceKey == 'management-choices'">
+                INSERT INTO option_management_choices
+                    (`user_id`, `business_date`, `raw_payload`, `source_etag`, `source_generated_at`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`, `latest`, `events`)
+                VALUES
+                    (#{userId}, #{businessDate}, #{payload}, #{sourceEtag}, #{generatedAt}, #{createBy}, NOW(), #{updateBy}, NOW(), #{remark}, CAST(JSON_EXTRACT(#{payload}, '$.latest') AS JSON), CAST(JSON_EXTRACT(#{payload}, '$.events') AS JSON))
+                ON DUPLICATE KEY UPDATE
+                    raw_payload = VALUES(raw_payload), source_etag = VALUES(source_etag), source_generated_at = VALUES(source_generated_at), update_by = VALUES(update_by), update_time = NOW(), remark = VALUES(remark), `latest` = VALUES(`latest`), `events` = VALUES(`events`)
+            </when>
+            <when test="resourceKey == 'premarket'">
+                INSERT INTO option_premarket
+                    (`user_id`, `business_date`, `raw_payload`, `source_etag`, `source_generated_at`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`, `access`, `brief`, `latest`, `receivedAt`)
+                VALUES
+                    (#{userId}, #{businessDate}, #{payload}, #{sourceEtag}, #{generatedAt}, #{createBy}, NOW(), #{updateBy}, NOW(), #{remark}, CAST(JSON_EXTRACT(#{payload}, '$.access') AS JSON), CAST(JSON_EXTRACT(#{payload}, '$.brief') AS JSON), CAST(JSON_EXTRACT(#{payload}, '$.latest') AS JSON), CAST(JSON_EXTRACT(#{payload}, '$.receivedAt') AS JSON))
+                ON DUPLICATE KEY UPDATE
+                    raw_payload = VALUES(raw_payload), source_etag = VALUES(source_etag), source_generated_at = VALUES(source_generated_at), update_by = VALUES(update_by), update_time = NOW(), remark = VALUES(remark), `access` = VALUES(`access`), `brief` = VALUES(`brief`), `latest` = VALUES(`latest`), `receivedAt` = VALUES(`receivedAt`)
+            </when>
+            <when test="resourceKey == 'updates'">
+                INSERT INTO option_updates
+                    (`user_id`, `business_date`, `raw_payload`, `source_etag`, `source_generated_at`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`, `seenSeq`, `currentSeq`, `seenAt`, `unseen`)
+                VALUES
+                    (#{userId}, #{businessDate}, #{payload}, #{sourceEtag}, #{generatedAt}, #{createBy}, NOW(), #{updateBy}, NOW(), #{remark}, CAST(JSON_EXTRACT(#{payload}, '$.seenSeq') AS JSON), CAST(JSON_EXTRACT(#{payload}, '$.currentSeq') AS JSON), CAST(JSON_EXTRACT(#{payload}, '$.seenAt') AS JSON), CAST(JSON_EXTRACT(#{payload}, '$.unseen') AS JSON))
+                ON DUPLICATE KEY UPDATE
+                    raw_payload = VALUES(raw_payload), source_etag = VALUES(source_etag), source_generated_at = VALUES(source_generated_at), update_by = VALUES(update_by), update_time = NOW(), remark = VALUES(remark), `seenSeq` = VALUES(`seenSeq`), `currentSeq` = VALUES(`currentSeq`), `seenAt` = VALUES(`seenAt`), `unseen` = VALUES(`unseen`)
+            </when>
+            <when test="resourceKey == 'support'">
+                INSERT INTO option_support
+                    (`user_id`, `business_date`, `raw_payload`, `source_etag`, `source_generated_at`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`, `mode`, `messages`, `thread`, `unread`)
+                VALUES
+                    (#{userId}, #{businessDate}, #{payload}, #{sourceEtag}, #{generatedAt}, #{createBy}, NOW(), #{updateBy}, NOW(), #{remark}, CAST(JSON_EXTRACT(#{payload}, '$.mode') AS JSON), CAST(JSON_EXTRACT(#{payload}, '$.messages') AS JSON), CAST(JSON_EXTRACT(#{payload}, '$.thread') AS JSON), CAST(JSON_EXTRACT(#{payload}, '$.unread') AS JSON))
+                ON DUPLICATE KEY UPDATE
+                    raw_payload = VALUES(raw_payload), source_etag = VALUES(source_etag), source_generated_at = VALUES(source_generated_at), update_by = VALUES(update_by), update_time = NOW(), remark = VALUES(remark), `mode` = VALUES(`mode`), `messages` = VALUES(`messages`), `thread` = VALUES(`thread`), `unread` = VALUES(`unread`)
+            </when>
+            <otherwise>INSERT INTO option_invalid_resource (snapshot_id) VALUES (NULL)</otherwise>
+        </choose>
+    </insert>
+</mapper>

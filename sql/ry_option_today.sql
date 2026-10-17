@@ -1,0 +1,193 @@
+-- OSM.AI「今日」接口数据表：每个接口一张表；payload 保存完整响应。
+-- 每个响应顶层字段另有同名 JSON 列，保留原始 JSON 类型；对象/数组列保留其完整嵌套结构。
+-- 公共审计字段沿用若依 create_by/create_time/update_by/update_time/remark。
+-- 非日期接口 business_date 使用 1970-01-01；premarket 使用请求参数 d。
+-- 若旧版 option_today_snapshot 已建表，本脚本不删除该表。
+
+CREATE TABLE IF NOT EXISTS `option_feed` (
+  `snapshot_id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint NOT NULL COMMENT '若依用户ID',
+  `business_date` date NOT NULL DEFAULT '1970-01-01' COMMENT '业务日期',
+  `raw_payload` longtext NOT NULL COMMENT '接口完整原始 JSON 响应',
+  `source_etag` varchar(255) DEFAULT NULL COMMENT '上游 ETag（主要用于 feed）',
+  `source_generated_at` datetime DEFAULT NULL COMMENT '接口数据生成时间/导入时间',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `schema_version` JSON NULL COMMENT '响应字段：schema_version',
+  `response_generated_at` JSON NULL COMMENT '响应字段：generated_at',
+  `serverReceivedAt` JSON NULL COMMENT '响应字段：serverReceivedAt',
+  `polledAt` JSON NULL COMMENT '响应字段：polledAt',
+  `ageSeconds` JSON NULL COMMENT '响应字段：ageSeconds',
+  `access` JSON NULL COMMENT '响应字段：access',
+  `mode` JSON NULL COMMENT '响应字段：mode',
+  `etDay` JSON NULL COMMENT '响应字段：etDay',
+  `marketEtDay` JSON NULL COMMENT '响应字段：marketEtDay',
+  `marketPhase` JSON NULL COMMENT '响应字段：marketPhase',
+  `usingPriorTradingDay` JSON NULL COMMENT '响应字段：usingPriorTradingDay',
+  `todayDesk` JSON NULL COMMENT '响应字段：todayDesk',
+  `brain` JSON NULL COMMENT '响应字段：brain',
+  `publicIntel` JSON NULL COMMENT '响应字段：publicIntel',
+  `signals` JSON NULL COMMENT '响应字段：signals',
+  `buyerSignals` JSON NULL COMMENT '响应字段：buyerSignals',
+  `signalGroups` JSON NULL COMMENT '响应字段：signalGroups',
+  `signalNews` JSON NULL COMMENT '响应字段：signalNews',
+  `voiceFeed` JSON NULL COMMENT '响应字段：voiceFeed',
+  `managementCards` JSON NULL COMMENT '响应字段：managementCards',
+  `protections` JSON NULL COMMENT '响应字段：protections',
+  `sentProtections` JSON NULL COMMENT '响应字段：sentProtections',
+  `buyerAlerts` JSON NULL COMMENT '响应字段：buyerAlerts',
+  `buyerLifecycle` JSON NULL COMMENT '响应字段：buyerLifecycle',
+  `buyerExpiryCloses` JSON NULL COMMENT '响应字段：buyerExpiryCloses',
+  `midtermShadowCards` JSON NULL COMMENT '响应字段：midtermShadowCards',
+  `withdrawnCards` JSON NULL COMMENT '响应字段：withdrawnCards',
+  `orderIntents` JSON NULL COMMENT '响应字段：orderIntents',
+  `settlementCards` JSON NULL COMMENT '响应字段：settlementCards',
+  `history` JSON NULL COMMENT '响应字段：history',
+  `historyFingerprint` JSON NULL COMMENT '响应字段：historyFingerprint',
+  `events` JSON NULL COMMENT '响应字段：events',
+  `performance` JSON NULL COMMENT '响应字段：performance',
+  `scan` JSON NULL COMMENT '响应字段：scan',
+  `source_id` JSON NULL COMMENT '响应字段：source_id',
+  `status` JSON NULL COMMENT '响应字段：status',
+  `sourceHealth` JSON NULL COMMENT '响应字段：sourceHealth',
+  `systemStatus` JSON NULL COMMENT '响应字段：systemStatus',
+  `terminalHealth` JSON NULL COMMENT '响应字段：terminalHealth',
+  PRIMARY KEY (`snapshot_id`),
+  UNIQUE KEY `uk_option_feed_user_date` (`user_id`, `business_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='OSM 今日接口 feed 快照';
+
+CREATE TABLE IF NOT EXISTS `option_seller_guide` (
+  `snapshot_id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint NOT NULL COMMENT '若依用户ID',
+  `business_date` date NOT NULL DEFAULT '1970-01-01' COMMENT '业务日期',
+  `raw_payload` longtext NOT NULL COMMENT '接口完整原始 JSON 响应',
+  `source_etag` varchar(255) DEFAULT NULL COMMENT '上游 ETag（主要用于 feed）',
+  `source_generated_at` datetime DEFAULT NULL COMMENT '接口数据生成时间/导入时间',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `completedVersion` JSON NULL COMMENT '响应字段：completedVersion',
+  `completedAt` JSON NULL COMMENT '响应字段：completedAt',
+  `currentVersion` JSON NULL COMMENT '响应字段：currentVersion',
+  `pending` JSON NULL COMMENT '响应字段：pending',
+  PRIMARY KEY (`snapshot_id`),
+  UNIQUE KEY `uk_option_seller_guide_user_date` (`user_id`, `business_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='OSM 今日接口 seller-guide 快照';
+
+CREATE TABLE IF NOT EXISTS `option_entitlement` (
+  `snapshot_id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint NOT NULL COMMENT '若依用户ID',
+  `business_date` date NOT NULL DEFAULT '1970-01-01' COMMENT '业务日期',
+  `raw_payload` longtext NOT NULL COMMENT '接口完整原始 JSON 响应',
+  `source_etag` varchar(255) DEFAULT NULL COMMENT '上游 ETag（主要用于 feed）',
+  `source_generated_at` datetime DEFAULT NULL COMMENT '接口数据生成时间/导入时间',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `access` JSON NULL COMMENT '响应字段：access',
+  PRIMARY KEY (`snapshot_id`),
+  UNIQUE KEY `uk_option_entitlement_user_date` (`user_id`, `business_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='OSM 今日接口 entitlement 快照';
+
+CREATE TABLE IF NOT EXISTS `option_decisions` (
+  `snapshot_id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint NOT NULL COMMENT '若依用户ID',
+  `business_date` date NOT NULL DEFAULT '1970-01-01' COMMENT '业务日期',
+  `raw_payload` longtext NOT NULL COMMENT '接口完整原始 JSON 响应',
+  `source_etag` varchar(255) DEFAULT NULL COMMENT '上游 ETag（主要用于 feed）',
+  `source_generated_at` datetime DEFAULT NULL COMMENT '接口数据生成时间/导入时间',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `latest` JSON NULL COMMENT '响应字段：latest',
+  `events` JSON NULL COMMENT '响应字段：events',
+  PRIMARY KEY (`snapshot_id`),
+  UNIQUE KEY `uk_option_decisions_user_date` (`user_id`, `business_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='OSM 今日接口 decisions 快照';
+
+CREATE TABLE IF NOT EXISTS `option_management_choices` (
+  `snapshot_id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint NOT NULL COMMENT '若依用户ID',
+  `business_date` date NOT NULL DEFAULT '1970-01-01' COMMENT '业务日期',
+  `raw_payload` longtext NOT NULL COMMENT '接口完整原始 JSON 响应',
+  `source_etag` varchar(255) DEFAULT NULL COMMENT '上游 ETag（主要用于 feed）',
+  `source_generated_at` datetime DEFAULT NULL COMMENT '接口数据生成时间/导入时间',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `latest` JSON NULL COMMENT '响应字段：latest',
+  `events` JSON NULL COMMENT '响应字段：events',
+  PRIMARY KEY (`snapshot_id`),
+  UNIQUE KEY `uk_option_management_choices_user_date` (`user_id`, `business_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='OSM 今日接口 management-choices 快照';
+
+CREATE TABLE IF NOT EXISTS `option_premarket` (
+  `snapshot_id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint NOT NULL COMMENT '若依用户ID',
+  `business_date` date NOT NULL DEFAULT '1970-01-01' COMMENT '业务日期',
+  `raw_payload` longtext NOT NULL COMMENT '接口完整原始 JSON 响应',
+  `source_etag` varchar(255) DEFAULT NULL COMMENT '上游 ETag（主要用于 feed）',
+  `source_generated_at` datetime DEFAULT NULL COMMENT '接口数据生成时间/导入时间',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `access` JSON NULL COMMENT '响应字段：access',
+  `brief` JSON NULL COMMENT '响应字段：brief',
+  `latest` JSON NULL COMMENT '响应字段：latest',
+  `receivedAt` JSON NULL COMMENT '响应字段：receivedAt',
+  PRIMARY KEY (`snapshot_id`),
+  UNIQUE KEY `uk_option_premarket_user_date` (`user_id`, `business_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='OSM 今日接口 premarket 快照';
+
+CREATE TABLE IF NOT EXISTS `option_updates` (
+  `snapshot_id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint NOT NULL COMMENT '若依用户ID',
+  `business_date` date NOT NULL DEFAULT '1970-01-01' COMMENT '业务日期',
+  `raw_payload` longtext NOT NULL COMMENT '接口完整原始 JSON 响应',
+  `source_etag` varchar(255) DEFAULT NULL COMMENT '上游 ETag（主要用于 feed）',
+  `source_generated_at` datetime DEFAULT NULL COMMENT '接口数据生成时间/导入时间',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `seenSeq` JSON NULL COMMENT '响应字段：seenSeq',
+  `currentSeq` JSON NULL COMMENT '响应字段：currentSeq',
+  `seenAt` JSON NULL COMMENT '响应字段：seenAt',
+  `unseen` JSON NULL COMMENT '响应字段：unseen',
+  PRIMARY KEY (`snapshot_id`),
+  UNIQUE KEY `uk_option_updates_user_date` (`user_id`, `business_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='OSM 今日接口 updates 快照';
+
+CREATE TABLE IF NOT EXISTS `option_support` (
+  `snapshot_id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint NOT NULL COMMENT '若依用户ID',
+  `business_date` date NOT NULL DEFAULT '1970-01-01' COMMENT '业务日期',
+  `raw_payload` longtext NOT NULL COMMENT '接口完整原始 JSON 响应',
+  `source_etag` varchar(255) DEFAULT NULL COMMENT '上游 ETag（主要用于 feed）',
+  `source_generated_at` datetime DEFAULT NULL COMMENT '接口数据生成时间/导入时间',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `mode` JSON NULL COMMENT '响应字段：mode',
+  `messages` JSON NULL COMMENT '响应字段：messages',
+  `thread` JSON NULL COMMENT '响应字段：thread',
+  `unread` JSON NULL COMMENT '响应字段：unread',
+  PRIMARY KEY (`snapshot_id`),
+  UNIQUE KEY `uk_option_support_user_date` (`user_id`, `business_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='OSM 今日接口 support 快照';
