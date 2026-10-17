@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.core.mapper.CoreSkillMapper">
+    <resultMap id="CoreSkillResult" type="CoreSkill">
+        <id property="skillId" column="skill_id" />
+        <result property="skillName" column="skill_name" />
+        <result property="version" column="version" />
+        <result property="description" column="description" />
+        <result property="author" column="author" />
+        <result property="repoUrl" column="repo_url" />
+        <result property="fileName" column="file_name" />
+        <result property="filePath" column="file_path" />
+        <result property="fileSize" column="file_size" />
+        <result property="downloadCount" column="download_count" />
+        <result property="status" column="status" />
+        <result property="createBy" column="create_by" />
+        <result property="createTime" column="create_time" />
+        <result property="updateBy" column="update_by" />
+        <result property="updateTime" column="update_time" />
+        <result property="remark" column="remark" />
+    </resultMap>
+    <sql id="selectCoreSkillVo">
+        select skill_id, skill_name, version, description, author, repo_url, file_name, file_path,
+               file_size, download_count, status, create_by, create_time, update_by, update_time, remark
+        from sys_open_skill
+    </sql>
+    <select id="selectCoreSkillList" parameterType="CoreSkill" resultMap="CoreSkillResult">
+        <include refid="selectCoreSkillVo" />
+        <where>
+            <if test="skillName != null and skillName != ''">and skill_name like concat('%', #{skillName}, '%')</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+        </where>
+        order by create_time desc
+    </select>
+    <select id="selectPublicCoreSkillList" resultMap="CoreSkillResult">
+        <include refid="selectCoreSkillVo" />
+        where status = '0'
+        order by create_time desc
+    </select>
+    <select id="selectCoreSkillById" parameterType="Long" resultMap="CoreSkillResult">
+        <include refid="selectCoreSkillVo" /> where skill_id = #{skillId}
+    </select>
+    <insert id="insertCoreSkill" parameterType="CoreSkill" useGeneratedKeys="true" keyProperty="skillId">
+        insert into sys_open_skill (skill_name, version, description, author, repo_url, file_name, file_path,
+            file_size, download_count, status, create_by, create_time)
+        values (#{skillName}, #{version}, #{description}, #{author}, #{repoUrl}, #{fileName}, #{filePath},
+            #{fileSize}, #{downloadCount}, #{status}, #{createBy}, sysdate())
+    </insert>
+    <update id="updateCoreSkillStatus" parameterType="CoreSkill">
+        update sys_open_skill set status = #{status}, update_by = #{updateBy}, update_time = sysdate()
+        where skill_id = #{skillId}
+    </update>
+    <update id="increaseDownloadCount" parameterType="Long">
+        update sys_open_skill set download_count = download_count + 1 where skill_id = #{skillId}
+    </update>
+    <delete id="deleteCoreSkillById" parameterType="Long">
+        delete from sys_open_skill where skill_id = #{skillId}
+    </delete>
+</mapper>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.core.mapper.CoreNavigationMapper">
+    <resultMap id="CoreNavigationResult" type="CoreNavigation">
+        <id property="navigationId" column="navigation_id" />
+        <result property="menuKey" column="menu_key" />
+        <result property="menuName" column="menu_name" />
+        <result property="icon" column="icon" />
+        <result property="routePath" column="route_path" />
+        <result property="orderNum" column="order_num" />
+        <result property="menuType" column="menu_type" />
+        <result property="status" column="status" />
+        <result property="createBy" column="create_by" />
+        <result property="createTime" column="create_time" />
+        <result property="updateBy" column="update_by" />
+        <result property="updateTime" column="update_time" />
+        <result property="remark" column="remark" />
+    </resultMap>
+    <sql id="selectNavigationVo">
+        select navigation_id, menu_key, menu_name, icon, route_path, order_num, menu_type, status,
+               create_by, create_time, update_by, update_time, remark
+        from sys_site_navigation
+    </sql>
+    <select id="selectNavigationList" parameterType="CoreNavigation" resultMap="CoreNavigationResult">
+        <include refid="selectNavigationVo" />
+        <where>
+            <if test="menuName != null and menuName != ''">and menu_name like concat('%', #{menuName}, '%')</if>
+            <if test="menuKey != null and menuKey != ''">and menu_key like concat('%', #{menuKey}, '%')</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+        </where>
+        order by order_num asc, navigation_id asc
+    </select>
+    <select id="selectEnabledNavigationList" resultMap="CoreNavigationResult">
+        <include refid="selectNavigationVo" />
+        where status = '0'
+        order by order_num asc, navigation_id asc
+    </select>
+    <select id="selectNavigationById" parameterType="Long" resultMap="CoreNavigationResult">
+        <include refid="selectNavigationVo" /> where navigation_id = #{navigationId}
+    </select>
+    <select id="selectNavigationByKey" parameterType="String" resultMap="CoreNavigationResult">
+        <include refid="selectNavigationVo" /> where menu_key = #{menuKey} limit 1
+    </select>
+    <insert id="insertNavigation" parameterType="CoreNavigation" useGeneratedKeys="true" keyProperty="navigationId">
+        insert into sys_site_navigation (menu_key, menu_name, icon, route_path, order_num, menu_type, status, create_by, create_time, remark)
+        values (#{menuKey}, #{menuName}, #{icon}, #{routePath}, #{orderNum}, #{menuType}, #{status}, #{createBy}, sysdate(), #{remark})
+    </insert>
+    <update id="updateNavigation" parameterType="CoreNavigation">
+        update sys_site_navigation
+        set menu_key = #{menuKey}, menu_name = #{menuName}, icon = #{icon}, route_path = #{routePath},
+            order_num = #{orderNum}, menu_type = #{menuType}, status = #{status}, update_by = #{updateBy}, update_time = sysdate(), remark = #{remark}
+        where navigation_id = #{navigationId}
+    </update>
+    <update id="updateNavigationStatus" parameterType="CoreNavigation">
+        update sys_site_navigation set status = #{status}, update_by = #{updateBy}, update_time = sysdate()
+        where navigation_id = #{navigationId}
+    </update>
+    <delete id="deleteNavigationById" parameterType="Long">
+        delete from sys_site_navigation where navigation_id = #{navigationId}
+    </delete>
+</mapper>
