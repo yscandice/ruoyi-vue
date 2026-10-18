@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.option.service.IOptionConductService;
 import com.ruoyi.option.service.IOptionFeedSyncService;
 import com.ruoyi.option.service.IOptionInfoService;
 import com.ruoyi.option.service.IOptionResourceService;
@@ -19,6 +20,8 @@ import com.ruoyi.option.service.IOptionResourceService;
  *          optionSyncTask.syncAllResourcesNow()（全部 7 个接口，忽略同步时段）
  *          optionSyncTask.syncInfo('premarket')（信息菜单单个接口：info-feed / referrals / premarket / earnings / notes）
  *          optionSyncTask.syncAllInfoNow()（信息菜单全部 5 个接口）
+ *          optionSyncTask.syncConduct()（进行菜单，每分钟；feed 仅交易时段请求，批次或交易日变化时重算栏目）
+ *          optionSyncTask.syncConductNow()（进行菜单强制同步，忽略交易时段）
  * 
  * @author yscandice
  */
@@ -35,6 +38,9 @@ public class OptionSyncTask
 
     @Autowired
     private IOptionInfoService infoService;
+
+    @Autowired
+    private IOptionConductService conductService;
 
     /**
      * 交易时段同步 feed
@@ -103,6 +109,33 @@ public class OptionSyncTask
         if (failed)
         {
             throw new ServiceException("部分信息接口同步失败：" + results);
+        }
+    }
+
+    /**
+     * 同步进行菜单（进行中 / 保护窗口 / 动态管理 / 已到期 / 历史信号）
+     */
+    public void syncConduct()
+    {
+        Map<String, Object> result = conductService.sync(false, "JOB", "system");
+        log.debug("optionSyncTask.syncConduct {}", result);
+        if ("FAILED".equals(result.get("result")))
+        {
+            throw new ServiceException("进行菜单同步失败：" + result);
+        }
+    }
+
+    /**
+     * 立即同步进行菜单（忽略交易时段并强制重算），失败或会话暂停时任务记为失败
+     */
+    public void syncConductNow()
+    {
+        Map<String, Object> result = conductService.sync(true, "JOB", "system");
+        log.info("optionSyncTask.syncConductNow {}", result);
+        Object state = result.get("result");
+        if ("FAILED".equals(state) || "PAUSED".equals(state) || "SKIPPED".equals(state))
+        {
+            throw new ServiceException("进行菜单同步未完成：" + result);
         }
     }
 }
