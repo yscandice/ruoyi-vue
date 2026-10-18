@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.option.mapper.OptionResourceMapper">
+
+    <resultMap type="OptionResourceVersion" id="OptionResourceVersionResult">
+        <id     property="versionId"     column="version_id"      />
+        <result property="bizKey"        column="biz_key"         />
+        <result property="contentHash"   column="content_hash"    />
+        <result property="payload"       column="payload"         />
+        <result property="firstSyncTime" column="first_sync_time" />
+        <result property="lastSyncTime"  column="last_sync_time"  />
+        <result property="hitCount"      column="hit_count"       />
+    </resultMap>
+
+    <resultMap type="OptionResourceSync" id="OptionResourceSyncResult">
+        <id     property="syncId"      column="sync_id"      />
+        <result property="resourceKey" column="resource_key" />
+        <result property="bizKey"      column="biz_key"      />
+        <result property="httpStatus"  column="http_status"  />
+        <result property="result"      column="result"       />
+        <result property="versionId"   column="version_id"   />
+        <result property="rawBytes"    column="raw_bytes"    />
+        <result property="costMs"      column="cost_ms"      />
+        <result property="message"     column="message"      />
+        <result property="triggerType" column="trigger_type" />
+        <result property="syncTime"    column="sync_time"    />
+    </resultMap>
+
+    <select id="selectVersionIdByHash" resultType="Long">
+        select version_id from ${tableName}
+        where biz_key = #{bizKey} and content_hash = #{contentHash}
+    </select>
+
+    <insert id="insertVersion" useGeneratedKeys="true" keyProperty="v.versionId" keyColumn="version_id">
+        insert into ${tableName} (biz_key, content_hash, payload,
+            <foreach collection="v.columns" item="c">${c.column}, </foreach>
+            first_sync_time, last_sync_time, hit_count)
+        values (#{v.bizKey}, #{v.contentHash}, #{v.payload},
+            <foreach collection="v.columns" item="c">#{c.value}, </foreach>
+            sysdate(), sysdate(), 1)
+    </insert>
+
+    <update id="touchVersion">
+        update ${tableName} set last_sync_time = sysdate(), hit_count = hit_count + 1
+        where version_id = #{versionId}
+    </update>
+
+    <select id="selectLatestVersion" resultMap="OptionResourceVersionResult">
+        select version_id, biz_key, content_hash, payload, first_sync_time, last_sync_time, hit_count
+        from ${tableName}
+        where biz_key = #{bizKey}
+        order by last_sync_time desc, version_id desc
+        limit 1
+    </select>
+
+    <select id="selectVersionById" resultMap="OptionResourceVersionResult">
+        select version_id, biz_key, content_hash, payload, first_sync_time, last_sync_time, hit_count
+        from ${tableName}
+        where version_id = #{versionId}
+    </select>
+
+    <select id="selectVersionList" resultMap="OptionResourceVersionResult">
+        select version_id, biz_key, content_hash, first_sync_time, last_sync_time, hit_count
+        from ${tableName}
+        <where>
+            <if test="bizKey != null and bizKey != ''">and biz_key = #{bizKey}</if>
+        </where>
+        order by version_id desc
+    </select>
+
+    <insert id="insertResourceSync" parameterType="OptionResourceSync" useGeneratedKeys="true" keyProperty="syncId">
+        insert into option_resource_sync (resource_key, biz_key, http_status, result, version_id, raw_bytes, cost_ms,
+            message, trigger_type, sync_time)
+        values (#{resourceKey}, #{bizKey}, #{httpStatus}, #{result}, #{versionId}, #{rawBytes}, #{costMs},
+            #{message}, #{triggerType}, sysdate())
+    </insert>
+
+    <select id="selectResourceSyncList" parameterType="OptionResourceSync" resultMap="OptionResourceSyncResult">
+        select sync_id, resource_key, biz_key, http_status, result, version_id, raw_bytes, cost_ms, message,
+               trigger_type, sync_time
+        from option_resource_sync
+        <where>
+            <if test="resourceKey != null and resourceKey != ''">and resource_key = #{resourceKey}</if>
+            <if test="bizKey != null and bizKey != ''">and biz_key = #{bizKey}</if>
+            <if test="result != null and result != ''">and result = #{result}</if>
+        </where>
+        order by sync_id desc
+    </select>
+
+</mapper>

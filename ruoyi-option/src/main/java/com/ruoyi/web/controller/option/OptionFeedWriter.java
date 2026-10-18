@@ -37,7 +37,10 @@ public class OptionFeedWriter
             return;
         }
         response.setHeader("ETag", feed.etag());
-        response.setHeader("X-Feed-Sync-Id", String.valueOf(feed.syncId()));
+        if (feed.syncId() != null)
+        {
+            response.setHeader("X-Feed-Sync-Id", String.valueOf(feed.syncId()));
+        }
         if (feed.generatedAt() != null)
         {
             response.setHeader("X-Feed-Generated-At", feed.generatedAt());

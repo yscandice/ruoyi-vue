@@ -21,6 +21,14 @@ public interface IOptionFeedSyncService
     public Map<String, Object> syncFeed(boolean force);
 
     /**
+     * 管理员手动导入一份 feed（走同一套拆分存表 + Redis 流程）
+     * 
+     * @param payload feed JSON
+     * @return 结果
+     */
+    public Map<String, Object> importFeed(String payload);
+
+    /**
      * 查询同步批次列表
      * 
      * @param sync 查询条件

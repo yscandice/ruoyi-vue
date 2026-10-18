@@ -188,6 +188,25 @@ public class OptionFeedSyncServiceImpl implements IOptionFeedSyncService
     }
 
     @Override
+    public Map<String, Object> importFeed(String payload)
+    {
+        long start = System.currentTimeMillis();
+        JsonNode root = OptionJson.read(payload);
+        if (!root.isObject())
+        {
+            throw new ServiceException("feed 必须是 JSON 对象");
+        }
+        OptionFeedSync sync = storage.store((ObjectNode) root, null, payload.length(), start);
+        OptionFeedSnapshot snapshot = assembler.assemble(sync.getSyncId());
+        cacheService.publish(snapshot);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("result", "IMPORTED");
+        result.put("syncId", sync.getSyncId());
+        result.put("newVersionCount", sync.getNewVersionCount());
+        return result;
+    }
+
+    @Override
     public List<OptionFeedSync> selectSyncList(OptionFeedSync sync)
     {
         return syncMapper.selectOptionFeedSyncList(sync);

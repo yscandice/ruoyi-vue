@@ -91,6 +91,19 @@ public class OsmClient
      */
     public OsmResponse getFeed(String cookie, String etag)
     {
+        return get(OptionFeedConstants.PATH_FEED, cookie, etag);
+    }
+
+    /**
+     * 请求会员 GET 接口（支持 If-None-Match 与 gzip）
+     * 
+     * @param pathAndQuery 路径（可带查询参数）
+     * @param cookie 会话 Cookie
+     * @param etag 上次的 ETag，可为空
+     * @return 响应（status 为 401/403 时表示会话失效）
+     */
+    public OsmResponse get(String pathAndQuery, String cookie, String etag)
+    {
         HttpHeaders headers = new HttpHeaders();
         headers.set(HttpHeaders.COOKIE, cookie);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
@@ -103,7 +116,7 @@ public class OsmClient
         }
         try
         {
-            ResponseEntity<byte[]> response = restTemplate.exchange(baseUrl + OptionFeedConstants.PATH_FEED,
+            ResponseEntity<byte[]> response = restTemplate.exchange(java.net.URI.create(baseUrl + pathAndQuery),
                     HttpMethod.GET, new HttpEntity<>(headers), byte[].class);
             HttpHeaders h = response.getHeaders();
             byte[] raw = response.getBody();
@@ -118,7 +131,7 @@ public class OsmClient
         }
         catch (ResourceAccessException e)
         {
-            throw new ServiceException("OSM feed 请求超时或网络不可达");
+            throw new ServiceException("OSM 接口请求超时或网络不可达：" + pathAndQuery);
         }
     }
 
@@ -136,7 +149,7 @@ public class OsmClient
         }
         catch (IOException e)
         {
-            throw new ServiceException("OSM feed 解压失败");
+            throw new ServiceException("OSM 响应解压失败");
         }
     }
 

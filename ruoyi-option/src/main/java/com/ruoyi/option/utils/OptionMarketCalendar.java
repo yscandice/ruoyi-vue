@@ -23,6 +23,8 @@ public class OptionMarketCalendar
 {
     public static final ZoneId MARKET_ZONE = ZoneId.of("America/New_York");
 
+    private static final LocalTime PREMARKET_OPEN = LocalTime.of(4, 0);
+
     private static final LocalTime OPEN = LocalTime.of(9, 30);
 
     private static final LocalTime CLOSE_WITH_FINAL_PULL = LocalTime.of(16, 5);
@@ -56,6 +58,45 @@ public class OptionMarketCalendar
         }
         LocalTime now = et.toLocalTime();
         return !now.isBefore(OPEN) && now.isBefore(CLOSE_WITH_FINAL_PULL);
+    }
+
+    /**
+     * 当前是否处于美东盘前 04:00-09:30（交易日）
+     * 
+     * @return 结果
+     */
+    public boolean isPremarketWindow()
+    {
+        ZonedDateTime et = ZonedDateTime.now(MARKET_ZONE);
+        if (!isTradingDay(et))
+        {
+            return false;
+        }
+        LocalTime now = et.toLocalTime();
+        return !now.isBefore(PREMARKET_OPEN) && now.isBefore(OPEN);
+    }
+
+    /**
+     * 是否交易日（非周末、非节假日）
+     * 
+     * @param time 时间
+     * @return 结果
+     */
+    public boolean isTradingDay(ZonedDateTime time)
+    {
+        ZonedDateTime et = time.withZoneSameInstant(MARKET_ZONE);
+        DayOfWeek day = et.getDayOfWeek();
+        return day != DayOfWeek.SATURDAY && day != DayOfWeek.SUNDAY && !isHoliday(et);
+    }
+
+    /**
+     * 美东当天日期 yyyy-MM-dd
+     * 
+     * @return 日期
+     */
+    public String todayEt()
+    {
+        return ZonedDateTime.now(MARKET_ZONE).toLocalDate().toString();
     }
 
     private boolean isHoliday(ZonedDateTime et)
