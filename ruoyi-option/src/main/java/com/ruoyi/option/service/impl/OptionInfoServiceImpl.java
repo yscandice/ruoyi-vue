@@ -8,6 +8,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +64,9 @@ public class OptionInfoServiceImpl implements IOptionInfoService
     /** 连续请求的间隔，避免触发 OSM 限流 */
     private static final long REQUEST_GAP_MILLIS = 800;
 
+    /** 每个接口一把锁，避免定时任务与手动同步并发重复抓取 */
+    private final Map<OptionInfo, ReentrantLock> locks = new ConcurrentHashMap<>();
+
     private static final Pattern DATE = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}$");
 
     private static final Pattern SLUG = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$");
@@ -101,18 +106,32 @@ public class OptionInfoServiceImpl implements IOptionInfoService
             log.warn("{} 同步暂停：OSM 会话未登录", spec.getKey());
             return result;
         }
-        Context ctx = new Context(spec, cookie, trigger, StringUtils.nvl(operator, "system"));
-        switch (spec.getSource())
+        ReentrantLock lock = locks.computeIfAbsent(spec, k -> new ReentrantLock());
+        if (!lock.tryLock())
         {
-            case JSON:
-                syncJson(ctx, result);
-                break;
-            case PAGE:
-                syncPage(ctx, key, result);
-                break;
-            default:
-                syncNotes(ctx, result);
-                break;
+            result.put("result", "SKIPPED");
+            result.put("message", "同步进行中，本次跳过");
+            return result;
+        }
+        try
+        {
+            Context ctx = new Context(spec, cookie, trigger, StringUtils.nvl(operator, "system"));
+            switch (spec.getSource())
+            {
+                case JSON:
+                    syncJson(ctx, result);
+                    break;
+                case PAGE:
+                    syncPage(ctx, key, result);
+                    break;
+                default:
+                    syncNotes(ctx, result);
+                    break;
+            }
+        }
+        finally
+        {
+            lock.unlock();
         }
         updateStatus(spec, result);
         return result;
