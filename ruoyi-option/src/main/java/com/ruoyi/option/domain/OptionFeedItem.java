@@ -179,4 +179,30 @@ public class OptionFeedItem extends BaseEntity
     {
         this.lastSyncId = lastSyncId;
     }
+
+    /** 创建时间（UTC） */
+    private String createTimeUtc;
+
+    public String getCreateTimeUtc()
+    {
+        return createTimeUtc;
+    }
+
+    public void setCreateTimeUtc(String createTimeUtc)
+    {
+        this.createTimeUtc = createTimeUtc;
+    }
+
+    /** 更新时间（UTC） */
+    private String updateTimeUtc;
+
+    public String getUpdateTimeUtc()
+    {
+        return updateTimeUtc;
+    }
+
+    public void setUpdateTimeUtc(String updateTimeUtc)
+    {
+        this.updateTimeUtc = updateTimeUtc;
+    }
 }

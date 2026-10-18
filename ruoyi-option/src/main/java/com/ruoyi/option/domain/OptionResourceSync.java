@@ -154,4 +154,17 @@ public class OptionResourceSync extends BaseEntity
     {
         this.syncTime = syncTime;
     }
+
+    /** 同步时间（UTC） */
+    private String syncTimeUtc;
+
+    public String getSyncTimeUtc()
+    {
+        return syncTimeUtc;
+    }
+
+    public void setSyncTimeUtc(String syncTimeUtc)
+    {
+        this.syncTimeUtc = syncTimeUtc;
+    }
 }

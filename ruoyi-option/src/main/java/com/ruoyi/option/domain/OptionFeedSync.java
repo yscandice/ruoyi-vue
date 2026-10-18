@@ -271,4 +271,30 @@ public class OptionFeedSync extends BaseEntity
     {
         this.status = status;
     }
+
+    /** 同步时间（UTC） */
+    private String syncTimeUtc;
+
+    public String getSyncTimeUtc()
+    {
+        return syncTimeUtc;
+    }
+
+    public void setSyncTimeUtc(String syncTimeUtc)
+    {
+        this.syncTimeUtc = syncTimeUtc;
+    }
+
+    /** 创建时间（UTC） */
+    private String createTimeUtc;
+
+    public String getCreateTimeUtc()
+    {
+        return createTimeUtc;
+    }
+
+    public void setCreateTimeUtc(String createTimeUtc)
+    {
+        this.createTimeUtc = createTimeUtc;
+    }
 }

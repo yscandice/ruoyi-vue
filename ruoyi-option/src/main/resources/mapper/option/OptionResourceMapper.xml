@@ -11,6 +11,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="payload"       column="payload"         />
         <result property="firstSyncTime" column="first_sync_time" />
         <result property="lastSyncTime"  column="last_sync_time"  />
+        <result property="firstSyncTimeUtc" column="first_sync_time_utc" />
+        <result property="lastSyncTimeUtc"  column="last_sync_time_utc"  />
         <result property="hitCount"      column="hit_count"       />
     </resultMap>
 
@@ -26,6 +28,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="message"     column="message"      />
         <result property="triggerType" column="trigger_type" />
         <result property="syncTime"    column="sync_time"    />
+        <result property="syncTimeUtc" column="sync_time_utc" />
     </resultMap>
 
     <select id="selectVersionIdByHash" resultType="Long">
@@ -36,19 +39,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <insert id="insertVersion" useGeneratedKeys="true" keyProperty="v.versionId" keyColumn="version_id">
         insert into ${tableName} (biz_key, content_hash, payload,
             <foreach collection="v.columns" item="c">${c.column}, </foreach>
-            first_sync_time, last_sync_time, hit_count)
+            first_sync_time, first_sync_time_utc, last_sync_time, last_sync_time_utc, hit_count)
         values (#{v.bizKey}, #{v.contentHash}, #{v.payload},
             <foreach collection="v.columns" item="c">#{c.value}, </foreach>
-            sysdate(), sysdate(), 1)
+            date_add(utc_timestamp(), interval 8 hour), utc_timestamp(), date_add(utc_timestamp(), interval 8 hour), utc_timestamp(), 1)
     </insert>
 
     <update id="touchVersion">
-        update ${tableName} set last_sync_time = sysdate(), hit_count = hit_count + 1
+        update ${tableName} set last_sync_time = date_add(utc_timestamp(), interval 8 hour), last_sync_time_utc = utc_timestamp(), hit_count = hit_count + 1
         where version_id = #{versionId}
     </update>
 
     <select id="selectLatestVersion" resultMap="OptionResourceVersionResult">
-        select version_id, biz_key, content_hash, payload, first_sync_time, last_sync_time, hit_count
+        select version_id, biz_key, content_hash, payload, first_sync_time, first_sync_time_utc, last_sync_time, last_sync_time_utc, hit_count
         from ${tableName}
         where biz_key = #{bizKey}
         order by last_sync_time desc, version_id desc
@@ -56,13 +59,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectVersionById" resultMap="OptionResourceVersionResult">
-        select version_id, biz_key, content_hash, payload, first_sync_time, last_sync_time, hit_count
+        select version_id, biz_key, content_hash, payload, first_sync_time, first_sync_time_utc, last_sync_time, last_sync_time_utc, hit_count
         from ${tableName}
         where version_id = #{versionId}
     </select>
 
     <select id="selectVersionList" resultMap="OptionResourceVersionResult">
-        select version_id, biz_key, content_hash, first_sync_time, last_sync_time, hit_count
+        select version_id, biz_key, content_hash, first_sync_time, first_sync_time_utc, last_sync_time, last_sync_time_utc, hit_count
         from ${tableName}
         <where>
             <if test="bizKey != null and bizKey != ''">and biz_key = #{bizKey}</if>
@@ -72,14 +75,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <insert id="insertResourceSync" parameterType="OptionResourceSync" useGeneratedKeys="true" keyProperty="syncId">
         insert into option_resource_sync (resource_key, biz_key, http_status, result, version_id, raw_bytes, cost_ms,
-            message, trigger_type, sync_time)
+            message, trigger_type, sync_time, sync_time_utc)
         values (#{resourceKey}, #{bizKey}, #{httpStatus}, #{result}, #{versionId}, #{rawBytes}, #{costMs},
-            #{message}, #{triggerType}, sysdate())
+            #{message}, #{triggerType}, date_add(utc_timestamp(), interval 8 hour), utc_timestamp())
     </insert>
 
     <select id="selectResourceSyncList" parameterType="OptionResourceSync" resultMap="OptionResourceSyncResult">
         select sync_id, resource_key, biz_key, http_status, result, version_id, raw_bytes, cost_ms, message,
-               trigger_type, sync_time
+               trigger_type, sync_time, sync_time_utc
         from option_resource_sync
         <where>
             <if test="resourceKey != null and resourceKey != ''">and resource_key = #{resourceKey}</if>

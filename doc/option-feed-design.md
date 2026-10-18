@@ -92,3 +92,16 @@ Quartz（每分钟）optionSyncTask.syncFeed()
 - 一次完整同步：793 个条目、约 3.7MB，拆分写库 + 拼接 + 写 Redis 约 2–3.5 秒；首次入库约 3.5MB。
 - 之后每次同步新增约 18–19 个版本（约 150KB，主要是 midtermShadowCards 的报价），manifest 约 3KB。
 - 本地返回与 OSM 原始响应逐字段一致（含嵌套字段顺序与数值写法）；gzip 后传输约 0.4MB。
+
+## 时间列约定（东八区 + UTC）
+
+所有 option_feed_* / option_res* / option_resource_sync 表的时间都存两列：
+
+| 东八区（原列名） | UTC |
+|---|---|
+| sync_time / create_time / update_time / first_sync_time / last_sync_time | 同名加 `_utc` 后缀 |
+
+- 写入时在 SQL 中用 `utc_timestamp()` 计算 UTC，东八区 = UTC + 8 小时，**不依赖数据库服务器时区和 JDBC serverTimezone**。
+- 接口返回同时带两个字段，如 `syncTime` / `syncTimeUtc`（UTC 字段为字面值字符串 `yyyy-MM-dd HH:mm:ss`）。
+- 已建表的库执行 `sql/ry_option_time_migration.sql`：补齐 `*_utc` 列并回填历史数据（可重复执行）。
+- 上游原始时间字段（generated_at、receivedAt、completedAt 等）保持 OSM 原值，不做转换。

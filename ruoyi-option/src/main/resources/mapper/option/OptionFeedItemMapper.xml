@@ -20,6 +20,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="lastSyncId"   column="last_sync_id"  />
         <result property="createTime"   column="create_time"   />
         <result property="updateTime"   column="update_time"   />
+        <result property="createTimeUtc" column="create_time_utc" />
+        <result property="updateTimeUtc" column="update_time_utc" />
     </resultMap>
 
     <select id="selectItemByHashes" resultMap="OptionFeedItemResult">
@@ -38,12 +40,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <insert id="insertItemBatch" useGeneratedKeys="true" keyProperty="list.versionId" keyColumn="version_id">
         insert into ${tableName} (list_type, item_id, content_hash, symbol, signal_id, item_state, item_kind, item_date,
-            payload, volatile_data, first_sync_id, last_sync_id, create_time)
+            payload, volatile_data, first_sync_id, last_sync_id, create_time, create_time_utc)
         values
         <foreach collection="list" item="it" separator=",">
             (#{it.listType}, #{it.itemId}, #{it.contentHash}, #{it.symbol}, #{it.signalId}, #{it.itemState},
              #{it.itemKind}, #{it.itemDate}, #{it.payload}, #{it.volatileData}, #{it.firstSyncId}, #{it.lastSyncId},
-             sysdate())
+             date_add(utc_timestamp(), interval 8 hour), utc_timestamp())
         </foreach>
     </insert>
 
@@ -58,14 +60,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         set volatile_data = case version_id
             <foreach collection="list" item="it">when #{it.versionId} then #{it.volatileData} </foreach>
         end,
-        update_time = sysdate()
+        update_time = date_add(utc_timestamp(), interval 8 hour),
+        update_time_utc = utc_timestamp()
         where version_id in
         <foreach collection="list" item="it" open="(" separator="," close=")">#{it.versionId}</foreach>
     </update>
 
     <select id="selectItemList" resultMap="OptionFeedItemResult">
         select version_id, list_type, item_id, content_hash, symbol, signal_id, item_state, item_kind, item_date,
-               volatile_data, first_sync_id, last_sync_id, create_time, update_time
+               volatile_data, first_sync_id, last_sync_id, create_time, update_time, create_time_utc, update_time_utc
         from ${tableName}
         <where>
             <if test="item.listType != null and item.listType != ''">and list_type = #{item.listType}</if>

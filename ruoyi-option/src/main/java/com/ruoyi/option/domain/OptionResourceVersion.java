@@ -130,4 +130,30 @@ public class OptionResourceVersion extends BaseEntity
     {
         this.hitCount = hitCount;
     }
+
+    /** 首次同步时间（UTC） */
+    private String firstSyncTimeUtc;
+
+    public String getFirstSyncTimeUtc()
+    {
+        return firstSyncTimeUtc;
+    }
+
+    public void setFirstSyncTimeUtc(String firstSyncTimeUtc)
+    {
+        this.firstSyncTimeUtc = firstSyncTimeUtc;
+    }
+
+    /** 最近命中时间（UTC） */
+    private String lastSyncTimeUtc;
+
+    public String getLastSyncTimeUtc()
+    {
+        return lastSyncTimeUtc;
+    }
+
+    public void setLastSyncTimeUtc(String lastSyncTimeUtc)
+    {
+        this.lastSyncTimeUtc = lastSyncTimeUtc;
+    }
 }

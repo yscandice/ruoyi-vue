@@ -67,3 +67,16 @@ Redis 未命中时从版本表取最新版本回填。
 | GET | `/option/sync/resource/{resource}/versions` | 版本列表（不含 payload） |
 | GET | `/option/sync/resource/{resource}/versions/{versionId}` | 版本详情 |
 | PUT | `/api/member/today/snapshot` | 导入：`{resourceKey, businessDate?, payload}`；`resourceKey=feed` 走 feed 拆分入库 |
+
+## 时间列约定（东八区 + UTC）
+
+所有 option_feed_* / option_res* / option_resource_sync 表的时间都存两列：
+
+| 东八区（原列名） | UTC |
+|---|---|
+| sync_time / create_time / update_time / first_sync_time / last_sync_time | 同名加 `_utc` 后缀 |
+
+- 写入时在 SQL 中用 `utc_timestamp()` 计算 UTC，东八区 = UTC + 8 小时，**不依赖数据库服务器时区和 JDBC serverTimezone**。
+- 接口返回同时带两个字段，如 `syncTime` / `syncTimeUtc`（UTC 字段为字面值字符串 `yyyy-MM-dd HH:mm:ss`）。
+- 已建表的库执行 `sql/ry_option_time_migration.sql`：补齐 `*_utc` 列并回填历史数据（可重复执行）。
+- 上游原始时间字段（generated_at、receivedAt、completedAt 等）保持 OSM 原值，不做转换。

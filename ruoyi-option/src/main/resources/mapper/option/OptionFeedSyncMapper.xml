@@ -7,6 +7,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <resultMap type="OptionFeedSync" id="OptionFeedSyncResult">
         <id     property="syncId"          column="sync_id"           />
         <result property="syncTime"        column="sync_time"         />
+        <result property="syncTimeUtc"     column="sync_time_utc"     />
         <result property="upstreamEtag"    column="upstream_etag"     />
         <result property="generatedAt"     column="generated_at"      />
         <result property="etDay"           column="et_day"            />
@@ -26,29 +27,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="costMs"          column="cost_ms"           />
         <result property="status"          column="status"            />
         <result property="createTime"      column="create_time"       />
+        <result property="createTimeUtc"   column="create_time_utc"   />
     </resultMap>
 
     <sql id="selectSyncBrief">
-        select sync_id, sync_time, upstream_etag, generated_at, et_day, market_et_day, market_phase, mode,
+        select sync_id, sync_time, sync_time_utc, upstream_etag, generated_at, et_day, market_et_day, market_phase, mode,
                schema_version, source_status, changed_groups, item_count, new_version_count, raw_bytes, cost_ms,
-               status, create_time
+               status, create_time, create_time_utc
         from option_feed_sync
     </sql>
 
     <sql id="selectSyncFull">
-        select sync_id, sync_time, upstream_etag, generated_at, et_day, market_et_day, market_phase, mode,
+        select sync_id, sync_time, sync_time_utc, upstream_etag, generated_at, et_day, market_et_day, market_phase, mode,
                schema_version, source_status, field_order, scalar_data, block_versions, manifest, changed_groups,
-               item_count, new_version_count, raw_bytes, cost_ms, status, create_time
+               item_count, new_version_count, raw_bytes, cost_ms, status, create_time, create_time_utc
         from option_feed_sync
     </sql>
 
     <insert id="insertOptionFeedSync" parameterType="OptionFeedSync" useGeneratedKeys="true" keyProperty="syncId">
-        insert into option_feed_sync (sync_time, upstream_etag, generated_at, et_day, market_et_day, market_phase,
+        insert into option_feed_sync (sync_time, sync_time_utc, upstream_etag, generated_at, et_day, market_et_day, market_phase,
             mode, schema_version, source_status, field_order, scalar_data, block_versions, manifest, raw_bytes,
-            status, create_time)
-        values (#{syncTime}, #{upstreamEtag}, #{generatedAt}, #{etDay}, #{marketEtDay}, #{marketPhase},
+            status, create_time, create_time_utc)
+        values (date_add(utc_timestamp(), interval 8 hour), utc_timestamp(), #{upstreamEtag}, #{generatedAt}, #{etDay}, #{marketEtDay}, #{marketPhase},
             #{mode}, #{schemaVersion}, #{sourceStatus}, '[]', '{}', '{}', '{}', #{rawBytes},
-            #{status}, sysdate())
+            #{status}, date_add(utc_timestamp(), interval 8 hour), utc_timestamp())
     </insert>
 
     <update id="updateOptionFeedSync" parameterType="OptionFeedSync">

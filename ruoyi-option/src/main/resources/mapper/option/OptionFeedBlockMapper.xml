@@ -29,8 +29,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertBlock" parameterType="OptionFeedBlock" useGeneratedKeys="true" keyProperty="versionId">
-        insert into option_feed_block (block_key, content_hash, payload, first_sync_id, last_sync_id, create_time)
-        values (#{blockKey}, #{contentHash}, #{payload}, #{firstSyncId}, #{lastSyncId}, sysdate())
+        insert into option_feed_block (block_key, content_hash, payload, first_sync_id, last_sync_id, create_time, create_time_utc)
+        values (#{blockKey}, #{contentHash}, #{payload}, #{firstSyncId}, #{lastSyncId}, date_add(utc_timestamp(), interval 8 hour), utc_timestamp())
     </insert>
 
     <update id="touchBlocks">
