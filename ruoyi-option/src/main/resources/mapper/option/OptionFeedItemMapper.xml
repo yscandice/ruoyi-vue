@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.option.mapper.OptionFeedItemMapper">
+
+    <resultMap type="OptionFeedItem" id="OptionFeedItemResult">
+        <id     property="versionId"    column="version_id"    />
+        <result property="listType"     column="list_type"     />
+        <result property="itemId"       column="item_id"       />
+        <result property="contentHash"  column="content_hash"  />
+        <result property="symbol"       column="symbol"        />
+        <result property="signalId"     column="signal_id"     />
+        <result property="itemState"    column="item_state"    />
+        <result property="itemKind"     column="item_kind"     />
+        <result property="itemDate"     column="item_date"     />
+        <result property="payload"      column="payload"       />
+        <result property="volatileData" column="volatile_data" />
+        <result property="firstSyncId"  column="first_sync_id" />
+        <result property="lastSyncId"   column="last_sync_id"  />
+        <result property="createTime"   column="create_time"   />
+        <result property="updateTime"   column="update_time"   />
+    </resultMap>
+
+    <select id="selectItemByHashes" resultMap="OptionFeedItemResult">
+        select version_id, list_type, item_id, content_hash, volatile_data
+        from ${tableName}
+        where list_type = #{listType} and content_hash in
+        <foreach collection="hashes" item="hash" open="(" separator="," close=")">#{hash}</foreach>
+    </select>
+
+    <select id="selectItemByVersionIds" resultMap="OptionFeedItemResult">
+        select version_id, list_type, item_id, payload, volatile_data
+        from ${tableName}
+        where version_id in
+        <foreach collection="versionIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
+
+    <insert id="insertItemBatch" useGeneratedKeys="true" keyProperty="list.versionId" keyColumn="version_id">
+        insert into ${tableName} (list_type, item_id, content_hash, symbol, signal_id, item_state, item_kind, item_date,
+            payload, volatile_data, first_sync_id, last_sync_id, create_time)
+        values
+        <foreach collection="list" item="it" separator=",">
+            (#{it.listType}, #{it.itemId}, #{it.contentHash}, #{it.symbol}, #{it.signalId}, #{it.itemState},
+             #{it.itemKind}, #{it.itemDate}, #{it.payload}, #{it.volatileData}, #{it.firstSyncId}, #{it.lastSyncId},
+             sysdate())
+        </foreach>
+    </insert>
+
+    <update id="touchItems">
+        update ${tableName} set last_sync_id = #{syncId}
+        where version_id in
+        <foreach collection="versionIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <update id="updateVolatileBatch">
+        update ${tableName}
+        set volatile_data = case version_id
+            <foreach collection="list" item="it">when #{it.versionId} then #{it.volatileData} </foreach>
+        end,
+        update_time = sysdate()
+        where version_id in
+        <foreach collection="list" item="it" open="(" separator="," close=")">#{it.versionId}</foreach>
+    </update>
+
+    <select id="selectItemList" resultMap="OptionFeedItemResult">
+        select version_id, list_type, item_id, content_hash, symbol, signal_id, item_state, item_kind, item_date,
+               volatile_data, first_sync_id, last_sync_id, create_time, update_time
+        from ${tableName}
+        <where>
+            <if test="item.listType != null and item.listType != ''">and list_type = #{item.listType}</if>
+            <if test="item.itemId != null and item.itemId != ''">and item_id = #{item.itemId}</if>
+            <if test="item.symbol != null and item.symbol != ''">and symbol = #{item.symbol}</if>
+            <if test="item.signalId != null and item.signalId != ''">and signal_id = #{item.signalId}</if>
+            <if test="item.itemState != null and item.itemState != ''">and item_state = #{item.itemState}</if>
+            <if test="item.itemKind != null and item.itemKind != ''">and item_kind = #{item.itemKind}</if>
+        </where>
+        order by version_id desc
+    </select>
+
+</mapper>

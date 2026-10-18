@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.option.mapper.OptionFeedSyncMapper">
+
+    <resultMap type="OptionFeedSync" id="OptionFeedSyncResult">
+        <id     property="syncId"          column="sync_id"           />
+        <result property="syncTime"        column="sync_time"         />
+        <result property="upstreamEtag"    column="upstream_etag"     />
+        <result property="generatedAt"     column="generated_at"      />
+        <result property="etDay"           column="et_day"            />
+        <result property="marketEtDay"     column="market_et_day"     />
+        <result property="marketPhase"     column="market_phase"      />
+        <result property="mode"            column="mode"              />
+        <result property="schemaVersion"   column="schema_version"    />
+        <result property="sourceStatus"    column="source_status"     />
+        <result property="fieldOrder"      column="field_order"       />
+        <result property="scalarData"      column="scalar_data"       />
+        <result property="blockVersions"   column="block_versions"    />
+        <result property="manifest"        column="manifest"          />
+        <result property="changedGroups"   column="changed_groups"    />
+        <result property="itemCount"       column="item_count"        />
+        <result property="newVersionCount" column="new_version_count" />
+        <result property="rawBytes"        column="raw_bytes"         />
+        <result property="costMs"          column="cost_ms"           />
+        <result property="status"          column="status"            />
+        <result property="createTime"      column="create_time"       />
+    </resultMap>
+
+    <sql id="selectSyncBrief">
+        select sync_id, sync_time, upstream_etag, generated_at, et_day, market_et_day, market_phase, mode,
+               schema_version, source_status, changed_groups, item_count, new_version_count, raw_bytes, cost_ms,
+               status, create_time
+        from option_feed_sync
+    </sql>
+
+    <sql id="selectSyncFull">
+        select sync_id, sync_time, upstream_etag, generated_at, et_day, market_et_day, market_phase, mode,
+               schema_version, source_status, field_order, scalar_data, block_versions, manifest, changed_groups,
+               item_count, new_version_count, raw_bytes, cost_ms, status, create_time
+        from option_feed_sync
+    </sql>
+
+    <insert id="insertOptionFeedSync" parameterType="OptionFeedSync" useGeneratedKeys="true" keyProperty="syncId">
+        insert into option_feed_sync (sync_time, upstream_etag, generated_at, et_day, market_et_day, market_phase,
+            mode, schema_version, source_status, field_order, scalar_data, block_versions, manifest, raw_bytes,
+            status, create_time)
+        values (#{syncTime}, #{upstreamEtag}, #{generatedAt}, #{etDay}, #{marketEtDay}, #{marketPhase},
+            #{mode}, #{schemaVersion}, #{sourceStatus}, '[]', '{}', '{}', '{}', #{rawBytes},
+            #{status}, sysdate())
+    </insert>
+
+    <update id="updateOptionFeedSync" parameterType="OptionFeedSync">
+        update option_feed_sync
+        <set>
+            <if test="fieldOrder != null">field_order = #{fieldOrder},</if>
+            <if test="scalarData != null">scalar_data = #{scalarData},</if>
+            <if test="blockVersions != null">block_versions = #{blockVersions},</if>
+            <if test="manifest != null">manifest = #{manifest},</if>
+            <if test="changedGroups != null">changed_groups = #{changedGroups},</if>
+            <if test="itemCount != null">item_count = #{itemCount},</if>
+            <if test="newVersionCount != null">new_version_count = #{newVersionCount},</if>
+            <if test="costMs != null">cost_ms = #{costMs},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+        </set>
+        where sync_id = #{syncId}
+    </update>
+
+    <select id="selectOptionFeedSyncById" parameterType="Long" resultMap="OptionFeedSyncResult">
+        <include refid="selectSyncFull"/>
+        where sync_id = #{syncId}
+    </select>
+
+    <select id="selectLatestOptionFeedSync" resultMap="OptionFeedSyncResult">
+        <include refid="selectSyncFull"/>
+        where status = '0'
+        order by sync_id desc
+        limit 1
+    </select>
+
+    <select id="selectOptionFeedSyncList" parameterType="OptionFeedSync" resultMap="OptionFeedSyncResult">
+        <include refid="selectSyncBrief"/>
+        <where>
+            <if test="etDay != null and etDay != ''">and et_day = #{etDay}</if>
+            <if test="marketPhase != null and marketPhase != ''">and market_phase = #{marketPhase}</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and date_format(sync_time, '%Y%m%d') &gt;= date_format(#{params.beginTime}, '%Y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and date_format(sync_time, '%Y%m%d') &lt;= date_format(#{params.endTime}, '%Y%m%d')
+            </if>
+        </where>
+        order by sync_id desc
+    </select>
+
+</mapper>

@@ -24,7 +24,10 @@ import com.ruoyi.common.annotation.RateLimiter;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.enums.LimitType;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.option.constant.OptionFeedConstants;
 import com.ruoyi.option.domain.OptionTodaySnapshot;
+import com.ruoyi.option.service.IOptionFeedCacheService;
+import com.ruoyi.option.service.IOptionSessionService;
 import com.ruoyi.option.service.IOptionTodayService;
 import com.ruoyi.option.service.impl.OptionUpstreamService;
 
@@ -39,6 +42,8 @@ public class OptionTodayController extends BaseController
     private final ObjectMapper objectMapper = new ObjectMapper();
     @Autowired private IOptionTodayService todayService;
     @Autowired private OptionUpstreamService upstreamService;
+    @Autowired private IOptionSessionService sessionService;
+    @Autowired private IOptionFeedCacheService feedCacheService;
 
     @Anonymous
     @RateLimiter(time = 60, count = 5, limitType = LimitType.IP)
@@ -49,13 +54,16 @@ public class OptionTodayController extends BaseController
         if (body == null || body.getEmail() == null || body.getPassword() == null
                 || body.getEmail().isBlank() || body.getPassword().isBlank())
             throw new IllegalArgumentException("email 和 password 必填");
-        upstreamService.login(body.getEmail(), body.getPassword());
+        sessionService.login(body.getEmail(), body.getPassword());
         return java.util.Map.of("authenticated", true);
     }
 
     @GetMapping(value = "/feed", produces = MediaType.APPLICATION_JSON_VALUE)
     public void feed(HttpServletRequest request, HttpServletResponse response) throws Exception
-    { write("feed", null, request, response, true); }
+    {
+        // feed 改为读取定时同步后的 Redis 缓存（未命中时从多表拼接），不再实时请求 OSM
+        OptionFeedWriter.write(feedCacheService.get(OptionFeedConstants.GROUP_FULL), request, response);
+    }
 
     @GetMapping(value = "/seller-guide", produces = MediaType.APPLICATION_JSON_VALUE)
     public void sellerGuide(HttpServletRequest request, HttpServletResponse response) throws Exception

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.option.mapper.OptionFeedBlockMapper">
+
+    <resultMap type="OptionFeedBlock" id="OptionFeedBlockResult">
+        <id     property="versionId"   column="version_id"    />
+        <result property="blockKey"    column="block_key"     />
+        <result property="contentHash" column="content_hash"  />
+        <result property="payload"     column="payload"       />
+        <result property="firstSyncId" column="first_sync_id" />
+        <result property="lastSyncId"  column="last_sync_id"  />
+        <result property="createTime"  column="create_time"   />
+    </resultMap>
+
+    <select id="selectBlockByHashes" resultMap="OptionFeedBlockResult">
+        select version_id, block_key, content_hash, first_sync_id, last_sync_id
+        from option_feed_block
+        where content_hash in
+        <foreach collection="hashes" item="hash" open="(" separator="," close=")">#{hash}</foreach>
+    </select>
+
+    <select id="selectBlockByVersionIds" resultMap="OptionFeedBlockResult">
+        select version_id, block_key, content_hash, payload
+        from option_feed_block
+        where version_id in
+        <foreach collection="versionIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
+
+    <insert id="insertBlock" parameterType="OptionFeedBlock" useGeneratedKeys="true" keyProperty="versionId">
+        insert into option_feed_block (block_key, content_hash, payload, first_sync_id, last_sync_id, create_time)
+        values (#{blockKey}, #{contentHash}, #{payload}, #{firstSyncId}, #{lastSyncId}, sysdate())
+    </insert>
+
+    <update id="touchBlocks">
+        update option_feed_block set last_sync_id = #{syncId}
+        where version_id in
+        <foreach collection="versionIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+</mapper>

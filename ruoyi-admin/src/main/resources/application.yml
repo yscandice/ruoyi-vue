@@ -17,6 +17,11 @@ ruoyi:
 server:
   # 服务器的HTTP端口，默认为8080
   port: 8090
+  # 响应压缩（feed 约 3.7MB，gzip 后约 0.5MB）
+  compression:
+    enabled: true
+    mime-types: application/json
+    min-response-size: 2048
   servlet:
     # 应用的访问路径
     context-path: /
