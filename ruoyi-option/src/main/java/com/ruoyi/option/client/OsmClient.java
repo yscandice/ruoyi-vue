@@ -41,6 +41,16 @@ public class OsmClient
     @Value("${OPTION_LOGIN_BASE_URL:https://osmtrade.com}")
     private String baseUrl;
 
+    /**
+     * OSM 站点地址
+     * 
+     * @return 如 https://osmtrade.com
+     */
+    public String getBaseUrl()
+    {
+        return baseUrl;
+    }
+
     @Autowired
     @Qualifier("optionRestTemplate")
     private RestTemplate restTemplate;
@@ -104,9 +114,26 @@ public class OsmClient
      */
     public OsmResponse get(String pathAndQuery, String cookie, String etag)
     {
+        return exchange(pathAndQuery, cookie, etag, List.of(MediaType.APPLICATION_JSON));
+    }
+
+    /**
+     * 请求会员页面或页面脚本（HTML / JS，支持 gzip）
+     * 
+     * @param pathAndQuery 路径（可带查询参数）
+     * @param cookie 会话 Cookie
+     * @return 响应
+     */
+    public OsmResponse getPage(String pathAndQuery, String cookie)
+    {
+        return exchange(pathAndQuery, cookie, null, List.of(MediaType.TEXT_HTML, MediaType.ALL));
+    }
+
+    private OsmResponse exchange(String pathAndQuery, String cookie, String etag, List<MediaType> accept)
+    {
         HttpHeaders headers = new HttpHeaders();
         headers.set(HttpHeaders.COOKIE, cookie);
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        headers.setAccept(accept);
         headers.set(HttpHeaders.ACCEPT_ENCODING, "gzip");
         headers.set(HttpHeaders.USER_AGENT, USER_AGENT);
         headers.set(HttpHeaders.REFERER, baseUrl + "/member/home");

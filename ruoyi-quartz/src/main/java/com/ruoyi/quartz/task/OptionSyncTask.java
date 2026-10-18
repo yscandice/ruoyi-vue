@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.option.service.IOptionFeedSyncService;
+import com.ruoyi.option.service.IOptionInfoService;
 import com.ruoyi.option.service.IOptionResourceService;
 
 /**
@@ -16,6 +17,8 @@ import com.ruoyi.option.service.IOptionResourceService;
  *          optionSyncTask.syncFeedNow()（忽略交易时段，手动"执行一次"用）
  *          optionSyncTask.syncResource('decisions')（单个接口，按接口自身同步时段判断）
  *          optionSyncTask.syncAllResourcesNow()（全部 7 个接口，忽略同步时段）
+ *          optionSyncTask.syncInfo('premarket')（信息菜单单个接口：info-feed / referrals / premarket / earnings / notes）
+ *          optionSyncTask.syncAllInfoNow()（信息菜单全部 5 个接口）
  * 
  * @author yscandice
  */
@@ -29,6 +32,9 @@ public class OptionSyncTask
 
     @Autowired
     private IOptionResourceService resourceService;
+
+    @Autowired
+    private IOptionInfoService infoService;
 
     /**
      * 交易时段同步 feed
@@ -69,6 +75,34 @@ public class OptionSyncTask
         if (failed)
         {
             throw new ServiceException("部分接口同步失败：" + results);
+        }
+    }
+
+    /**
+     * 同步信息菜单单个接口（info-feed / referrals / premarket / earnings / notes）
+     */
+    public void syncInfo(String info)
+    {
+        Map<String, Object> result = infoService.sync(info, null, "JOB", "system");
+        log.debug("optionSyncTask.syncInfo({}) {}", info, result);
+        if ("FAILED".equals(result.get("result")))
+        {
+            throw new ServiceException("信息接口同步失败：" + result);
+        }
+    }
+
+    /**
+     * 立即同步信息菜单全部接口，任一失败则任务记为失败
+     */
+    public void syncAllInfoNow()
+    {
+        Map<String, Object> results = infoService.syncAll("JOB", "system");
+        log.info("optionSyncTask.syncAllInfoNow {}", results);
+        boolean failed = results.values().stream()
+                .anyMatch(r -> r instanceof Map<?, ?> m && "FAILED".equals(m.get("result")));
+        if (failed)
+        {
+            throw new ServiceException("部分信息接口同步失败：" + results);
         }
     }
 }

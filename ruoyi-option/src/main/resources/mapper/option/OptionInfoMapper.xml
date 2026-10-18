@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.option.mapper.OptionInfoMapper">
+
+    <resultMap type="OptionInfoVersion" id="OptionInfoVersionResult">
+        <id     property="versionId"        column="version_id"          />
+        <result property="bizKey"           column="biz_key"             />
+        <result property="contentHash"      column="content_hash"        />
+        <result property="payload"          column="payload"             />
+        <result property="firstSyncTime"    column="first_sync_time"     />
+        <result property="firstSyncTimeUtc" column="first_sync_time_utc" />
+        <result property="lastSyncTime"     column="last_sync_time"      />
+        <result property="lastSyncTimeUtc"  column="last_sync_time_utc"  />
+        <result property="hitCount"         column="hit_count"           />
+        <result property="createBy"         column="create_by"           />
+        <result property="createTime"       column="create_time"         />
+        <result property="createTimeUtc"    column="create_time_utc"     />
+        <result property="updateBy"         column="update_by"           />
+        <result property="updateTime"       column="update_time"         />
+        <result property="updateTimeUtc"    column="update_time_utc"     />
+        <result property="remark"           column="remark"              />
+    </resultMap>
+
+    <resultMap type="OptionInfoSync" id="OptionInfoSyncResult">
+        <id     property="syncId"      column="sync_id"       />
+        <result property="infoKey"     column="info_key"      />
+        <result property="bizKey"      column="biz_key"       />
+        <result property="httpStatus"  column="http_status"   />
+        <result property="result"      column="result"        />
+        <result property="versionId"   column="version_id"    />
+        <result property="rawBytes"    column="raw_bytes"     />
+        <result property="costMs"      column="cost_ms"       />
+        <result property="message"     column="message"       />
+        <result property="triggerType" column="trigger_type"  />
+        <result property="syncTime"    column="sync_time"     />
+        <result property="syncTimeUtc" column="sync_time_utc" />
+        <result property="createBy"    column="create_by"     />
+        <result property="createTime"  column="create_time"   />
+    </resultMap>
+
+    <sql id="selectVersionVo">
+        select version_id, biz_key, content_hash, payload, first_sync_time, first_sync_time_utc, last_sync_time,
+               last_sync_time_utc, hit_count, create_by, create_time, create_time_utc, update_by, update_time,
+               update_time_utc, remark
+        from ${tableName}
+    </sql>
+
+    <select id="selectVersionIdByHash" resultType="Long">
+        select version_id from ${tableName}
+        where biz_key = #{bizKey} and content_hash = #{contentHash}
+    </select>
+
+    <insert id="insertVersion" useGeneratedKeys="true" keyProperty="v.versionId" keyColumn="version_id">
+        insert into ${tableName} (biz_key, content_hash, payload,
+            <foreach collection="v.columns" item="c">${c.column}, </foreach>
+            first_sync_time, first_sync_time_utc, last_sync_time, last_sync_time_utc, hit_count,
+            create_by, create_time, create_time_utc, update_by, update_time, update_time_utc, remark)
+        values (#{v.bizKey}, #{v.contentHash}, #{v.payload},
+            <foreach collection="v.columns" item="c">#{c.value}, </foreach>
+            date_add(utc_timestamp(), interval 8 hour), utc_timestamp(), date_add(utc_timestamp(), interval 8 hour), utc_timestamp(), 1,
+            #{v.createBy}, date_add(utc_timestamp(), interval 8 hour), utc_timestamp(), #{v.createBy}, date_add(utc_timestamp(), interval 8 hour), utc_timestamp(), #{v.remark})
+    </insert>
+
+    <update id="touchVersion">
+        update ${tableName}
+        set last_sync_time = date_add(utc_timestamp(), interval 8 hour), last_sync_time_utc = utc_timestamp(),
+            hit_count = hit_count + 1, update_by = #{updateBy},
+            update_time = date_add(utc_timestamp(), interval 8 hour), update_time_utc = utc_timestamp()
+        where version_id = #{versionId}
+    </update>
+
+    <select id="selectLatestVersion" resultMap="OptionInfoVersionResult">
+        <include refid="selectVersionVo"/>
+        where biz_key = #{bizKey}
+        order by last_sync_time desc, version_id desc
+        limit 1
+    </select>
+
+    <select id="selectLatestVersions" resultMap="OptionInfoVersionResult">
+        <include refid="selectVersionVo"/> t
+        where t.biz_key != '-'
+          and not exists (select 1 from ${tableName} x
+                          where x.biz_key = t.biz_key
+                            and (x.last_sync_time &gt; t.last_sync_time
+                                 or (x.last_sync_time = t.last_sync_time and x.version_id &gt; t.version_id)))
+        order by t.biz_key desc
+    </select>
+
+    <select id="selectBizKeys" resultType="String">
+        select distinct biz_key from ${tableName} where biz_key != '-'
+    </select>
+
+    <select id="selectVersionById" resultMap="OptionInfoVersionResult">
+        <include refid="selectVersionVo"/>
+        where version_id = #{versionId}
+    </select>
+
+    <select id="selectVersionList" resultMap="OptionInfoVersionResult">
+        select version_id, biz_key, content_hash, first_sync_time, first_sync_time_utc, last_sync_time,
+               last_sync_time_utc, hit_count, create_by, create_time, create_time_utc, update_by, update_time,
+               update_time_utc, remark
+        from ${tableName}
+        <where>
+            <if test="bizKey != null and bizKey != ''">and biz_key = #{bizKey}</if>
+        </where>
+        order by version_id desc
+    </select>
+
+    <insert id="insertInfoSync" parameterType="OptionInfoSync" useGeneratedKeys="true" keyProperty="syncId">
+        insert into option_info_sync (info_key, biz_key, http_status, result, version_id, raw_bytes, cost_ms,
+            message, trigger_type, sync_time, sync_time_utc, create_by, create_time)
+        values (#{infoKey}, #{bizKey}, #{httpStatus}, #{result}, #{versionId}, #{rawBytes}, #{costMs},
+            #{message}, #{triggerType}, date_add(utc_timestamp(), interval 8 hour), utc_timestamp(), #{createBy},
+            date_add(utc_timestamp(), interval 8 hour))
+    </insert>
+
+    <select id="selectInfoSyncList" parameterType="OptionInfoSync" resultMap="OptionInfoSyncResult">
+        select sync_id, info_key, biz_key, http_status, result, version_id, raw_bytes, cost_ms, message,
+               trigger_type, sync_time, sync_time_utc, create_by, create_time
+        from option_info_sync
+        <where>
+            <if test="infoKey != null and infoKey != ''">and info_key = #{infoKey}</if>
+            <if test="bizKey != null and bizKey != ''">and biz_key = #{bizKey}</if>
+            <if test="result != null and result != ''">and result = #{result}</if>
+        </where>
+        order by sync_id desc
+    </select>
+
+</mapper>
