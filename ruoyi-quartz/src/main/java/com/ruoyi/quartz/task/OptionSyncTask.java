@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.option.service.IOptionConductService;
 import com.ruoyi.option.service.IOptionFeedSyncService;
+import com.ruoyi.option.service.IOptionFollowService;
 import com.ruoyi.option.service.IOptionInfoService;
 import com.ruoyi.option.service.IOptionResourceService;
 
@@ -41,6 +42,9 @@ public class OptionSyncTask
 
     @Autowired
     private IOptionConductService conductService;
+
+    @Autowired
+    private IOptionFollowService followService;
 
     /**
      * 交易时段同步 feed
@@ -136,6 +140,33 @@ public class OptionSyncTask
         if ("FAILED".equals(state) || "PAUSED".equals(state) || "SKIPPED".equals(state))
         {
             throw new ServiceException("进行菜单同步未完成：" + result);
+        }
+    }
+
+    /**
+     * 同步跟踪菜单（卖方信号 / 中期信号 / 买方信号 / 动态管理 标记）
+     */
+    public void syncFollow()
+    {
+        Map<String, Object> result = followService.sync(false, "JOB", "system");
+        log.debug("optionSyncTask.syncFollow {}", result);
+        if ("FAILED".equals(result.get("result")))
+        {
+            throw new ServiceException("跟踪菜单同步失败：" + result);
+        }
+    }
+
+    /**
+     * 立即同步跟踪菜单（忽略交易时段并强制重算），失败或会话暂停时任务记为失败
+     */
+    public void syncFollowNow()
+    {
+        Map<String, Object> result = followService.sync(true, "JOB", "system");
+        log.info("optionSyncTask.syncFollowNow {}", result);
+        Object state = result.get("result");
+        if ("FAILED".equals(state) || "PAUSED".equals(state) || "SKIPPED".equals(state))
+        {
+            throw new ServiceException("跟踪菜单同步未完成：" + result);
         }
     }
 }
