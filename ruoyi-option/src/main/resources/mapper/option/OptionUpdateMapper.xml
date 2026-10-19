@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.option.mapper.OptionUpdateMapper">
+
+    <resultMap type="OptionUpdateItem" id="OptionUpdateItemResult">
+        <id     property="versionId"      column="version_id"      />
+        <result property="itemKey"        column="item_key"        />
+        <result property="contentHash"    column="content_hash"    />
+        <result property="pagePath"       column="page_path"       />
+        <result property="title"          column="title"           />
+        <result property="subTitle"       column="sub_title"       />
+        <result property="publishDate"    column="publish_date"    />
+        <result property="targetPath"     column="target_path"     />
+        <result property="visualType"     column="visual_type"     />
+        <result property="mediaUrl"       column="media_url"       />
+        <result property="itemCount"      column="item_count"      />
+        <result property="textLength"     column="text_length"     />
+        <result property="sortNo"         column="sort_no"         />
+        <result property="payload"        column="payload"         />
+        <result property="firstSyncId"    column="first_sync_id"   />
+        <result property="lastSyncId"     column="last_sync_id"    />
+        <result property="createBy"       column="create_by"       />
+        <result property="createTime"     column="create_time"     />
+        <result property="createTimeUtc"  column="create_time_utc" />
+        <result property="updateBy"       column="update_by"       />
+        <result property="updateTime"     column="update_time"     />
+        <result property="updateTimeUtc"  column="update_time_utc" />
+        <result property="remark"         column="remark"          />
+    </resultMap>
+
+    <resultMap type="OptionUpdateSync" id="OptionUpdateSyncResult">
+        <id     property="syncId"          column="sync_id"           />
+        <result property="sourceHash"      column="source_hash"       />
+        <result property="result"          column="result"            />
+        <result property="pageCount"       column="page_count"        />
+        <result property="entryCount"      column="entry_count"       />
+        <result property="latestDate"      column="latest_date"       />
+        <result property="currentSeq"      column="current_seq"       />
+        <result property="transferBytes"   column="transfer_bytes"    />
+        <result property="newVersionCount" column="new_version_count" />
+        <result property="changedKinds"    column="changed_kinds"     />
+        <result property="costMs"          column="cost_ms"           />
+        <result property="message"         column="message"           />
+        <result property="triggerType"     column="trigger_type"      />
+        <result property="syncTime"        column="sync_time"         />
+        <result property="syncTimeUtc"     column="sync_time_utc"     />
+        <result property="createBy"        column="create_by"         />
+        <result property="createTime"      column="create_time"       />
+        <result property="createTimeUtc"   column="create_time_utc"   />
+    </resultMap>
+
+    <sql id="selectItemColumns">
+        version_id, item_key, content_hash, page_path, title, sub_title, publish_date, target_path, visual_type,
+        media_url, item_count, text_length, sort_no, first_sync_id, last_sync_id, create_by, create_time,
+        create_time_utc, update_by, update_time, update_time_utc, remark
+    </sql>
+
+    <sql id="selectSyncVo">
+        select sync_id, source_hash, result, page_count, entry_count, latest_date, current_seq, transfer_bytes,
+               new_version_count, changed_kinds, cost_ms, message, trigger_type, sync_time, sync_time_utc,
+               create_by, create_time, create_time_utc
+        from option_update_sync
+    </sql>
+
+    <select id="selectVersionKeys" resultMap="OptionUpdateItemResult">
+        select version_id, item_key, content_hash from ${tableName}
+        where item_key in
+        <foreach collection="itemKeys" item="k" open="(" separator="," close=")">#{k}</foreach>
+    </select>
+
+    <insert id="insertItem" useGeneratedKeys="true" keyProperty="item.versionId" keyColumn="version_id">
+        insert into ${tableName} (item_key, content_hash, page_path, title, sub_title, publish_date, target_path,
+            visual_type, media_url, item_count, text_length, sort_no, payload, first_sync_id, last_sync_id,
+            create_by, create_time, create_time_utc, update_by, update_time, update_time_utc, remark)
+        values (#{item.itemKey}, #{item.contentHash}, #{item.pagePath}, #{item.title}, #{item.subTitle},
+            #{item.publishDate}, #{item.targetPath}, #{item.visualType}, #{item.mediaUrl}, #{item.itemCount},
+            #{item.textLength}, #{item.sortNo}, #{item.payload}, #{item.firstSyncId}, #{item.lastSyncId},
+            #{item.createBy}, date_add(utc_timestamp(), interval 8 hour), utc_timestamp(), #{item.createBy},
+            date_add(utc_timestamp(), interval 8 hour), utc_timestamp(), #{item.remark})
+    </insert>
+
+    <update id="touchItems">
+        update ${tableName}
+        set last_sync_id = #{syncId},
+            sort_no = case version_id
+                <foreach collection="items" item="i">when #{i.versionId} then #{i.sortNo} </foreach>
+                else sort_no end,
+            update_by = #{updateBy},
+            update_time = date_add(utc_timestamp(), interval 8 hour),
+            update_time_utc = utc_timestamp()
+        where version_id in
+        <foreach collection="items" item="i" open="(" separator="," close=")">#{i.versionId}</foreach>
+    </update>
+
+    <select id="selectItemsBySync" resultMap="OptionUpdateItemResult">
+        select <include refid="selectItemColumns"/>, payload
+        from ${tableName}
+        where last_sync_id = #{syncId}
+        order by sort_no, version_id
+    </select>
+
+    <select id="selectItemList" resultMap="OptionUpdateItemResult">
+        select <include refid="selectItemColumns"/>
+        from ${tableName}
+        <where>
+            <if test="item.itemKey != null and item.itemKey != ''">and item_key = #{item.itemKey}</if>
+            <if test="item.title != null and item.title != ''">and title like concat('%', #{item.title}, '%')</if>
+            <if test="item.publishDate != null and item.publishDate != ''">and publish_date like concat(#{item.publishDate}, '%')</if>
+            <if test="item.targetPath != null and item.targetPath != ''">and target_path like concat(#{item.targetPath}, '%')</if>
+            <if test="item.visualType != null and item.visualType != ''">and visual_type = #{item.visualType}</if>
+            <if test="item.lastSyncId != null">and last_sync_id = #{item.lastSyncId}</if>
+        </where>
+        order by version_id desc
+    </select>
+
+    <select id="selectItemById" resultMap="OptionUpdateItemResult">
+        select <include refid="selectItemColumns"/>, payload
+        from ${tableName}
+        where version_id = #{versionId}
+    </select>
+
+    <insert id="insertUpdateSync" parameterType="OptionUpdateSync" useGeneratedKeys="true" keyProperty="syncId">
+        insert into option_update_sync (source_hash, result, message, trigger_type, sync_time, sync_time_utc,
+            create_by, create_time, create_time_utc)
+        values (#{sourceHash}, #{result}, #{message}, #{triggerType}, date_add(utc_timestamp(), interval 8 hour),
+            utc_timestamp(), #{createBy}, date_add(utc_timestamp(), interval 8 hour), utc_timestamp())
+    </insert>
+
+    <update id="updateUpdateSync" parameterType="OptionUpdateSync">
+        update option_update_sync
+        <set>
+            <if test="result != null and result != ''">result = #{result},</if>
+            <if test="pageCount != null">page_count = #{pageCount},</if>
+            <if test="entryCount != null">entry_count = #{entryCount},</if>
+            <if test="latestDate != null">latest_date = #{latestDate},</if>
+            <if test="currentSeq != null">current_seq = #{currentSeq},</if>
+            <if test="transferBytes != null">transfer_bytes = #{transferBytes},</if>
+            <if test="newVersionCount != null">new_version_count = #{newVersionCount},</if>
+            <if test="changedKinds != null">changed_kinds = #{changedKinds},</if>
+            <if test="costMs != null">cost_ms = #{costMs},</if>
+            <if test="message != null">message = #{message},</if>
+        </set>
+        where sync_id = #{syncId}
+    </update>
+
+    <select id="selectLatestUpdatedSync" resultMap="OptionUpdateSyncResult">
+        <include refid="selectSyncVo"/>
+        where result = 'UPDATED'
+        order by sync_id desc
+        limit 1
+    </select>
+
+    <select id="selectUpdateSyncList" parameterType="OptionUpdateSync" resultMap="OptionUpdateSyncResult">
+        <include refid="selectSyncVo"/>
+        <where>
+            <if test="result != null and result != ''">and result = #{result}</if>
+            <if test="triggerType != null and triggerType != ''">and trigger_type = #{triggerType}</if>
+        </where>
+        order by sync_id desc
+    </select>
+
+</mapper>

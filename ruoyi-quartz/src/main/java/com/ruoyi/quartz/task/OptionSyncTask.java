@@ -14,6 +14,7 @@ import com.ruoyi.option.service.IOptionInfoService;
 import com.ruoyi.option.service.IOptionRecordService;
 import com.ruoyi.option.service.IOptionResourceService;
 import com.ruoyi.option.service.IOptionSettlementService;
+import com.ruoyi.option.service.IOptionUpdateService;
 
 /**
  * 期权 OSM 数据同步任务
@@ -32,6 +33,8 @@ import com.ruoyi.option.service.IOptionSettlementService;
  *          optionSyncTask.syncRecordNow()（战绩菜单强制同步，忽略交易时段）
  *          optionSyncTask.syncAcademy()（学堂菜单，每 30 分钟；抓取学堂页面，内容变化时写库）
  *          optionSyncTask.syncAcademyNow()（学堂菜单强制同步）
+ *          optionSyncTask.syncUpdate()（更新菜单，每 30 分钟；抓取功能更新页面，内容变化时写库）
+ *          optionSyncTask.syncUpdateNow()（更新菜单强制同步）
  * 
  * @author yscandice
  */
@@ -63,6 +66,9 @@ public class OptionSyncTask
 
     @Autowired
     private IOptionAcademyService academyService;
+
+    @Autowired
+    private IOptionUpdateService updateService;
 
     /**
      * 交易时段同步 feed
@@ -266,6 +272,33 @@ public class OptionSyncTask
         if ("FAILED".equals(state) || "PAUSED".equals(state) || "SKIPPED".equals(state))
         {
             throw new ServiceException("学堂菜单同步未完成：" + result);
+        }
+    }
+
+    /**
+     * 同步更新菜单（功能更新页面：页头 / 更新条目）
+     */
+    public void syncUpdate()
+    {
+        Map<String, Object> result = updateService.sync(false, "JOB", "system");
+        log.debug("optionSyncTask.syncUpdate {}", result);
+        if ("FAILED".equals(result.get("result")))
+        {
+            throw new ServiceException("更新菜单同步失败：" + result);
+        }
+    }
+
+    /**
+     * 立即同步更新菜单（强制重新发布），失败或会话暂停时任务记为失败
+     */
+    public void syncUpdateNow()
+    {
+        Map<String, Object> result = updateService.sync(true, "JOB", "system");
+        log.info("optionSyncTask.syncUpdateNow {}", result);
+        Object state = result.get("result");
+        if ("FAILED".equals(state) || "PAUSED".equals(state) || "SKIPPED".equals(state))
+        {
+            throw new ServiceException("更新菜单同步未完成：" + result);
         }
     }
 }
