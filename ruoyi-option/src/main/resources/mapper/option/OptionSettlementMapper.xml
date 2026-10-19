@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.option.mapper.OptionSettlementMapper">
+
+    <resultMap type="OptionSettlementItem" id="OptionSettlementItemResult">
+        <id     property="versionId"        column="version_id"        />
+        <result property="itemKey"          column="item_key"          />
+        <result property="contentHash"      column="content_hash"      />
+        <result property="recordType"       column="record_type"       />
+        <result property="symbol"           column="symbol"            />
+        <result property="signalId"         column="signal_id"         />
+        <result property="recommendationId" column="recommendation_id" />
+        <result property="parentSignalId"   column="parent_signal_id"  />
+        <result property="intent"           column="intent"            />
+        <result property="structure"        column="structure"         />
+        <result property="expiryDate"       column="expiry_date"       />
+        <result property="statusCode"       column="status_code"       />
+        <result property="resultKind"       column="result_kind"       />
+        <result property="settledDay"       column="settled_day"       />
+        <result property="issuedDay"        column="issued_day"        />
+        <result property="pnlUsd"           column="pnl_usd"           />
+        <result property="emittedTime"      column="emitted_time"      />
+        <result property="emittedTimeUtc"   column="emitted_time_utc"  />
+        <result property="settledTime"      column="settled_time"      />
+        <result property="settledTimeUtc"   column="settled_time_utc"  />
+        <result property="sortNo"           column="sort_no"           />
+        <result property="payload"          column="payload"           />
+        <result property="firstSyncId"      column="first_sync_id"     />
+        <result property="lastSyncId"       column="last_sync_id"      />
+        <result property="createBy"         column="create_by"         />
+        <result property="createTime"       column="create_time"       />
+        <result property="createTimeUtc"    column="create_time_utc"   />
+        <result property="updateBy"         column="update_by"         />
+        <result property="updateTime"       column="update_time"       />
+        <result property="updateTimeUtc"    column="update_time_utc"   />
+        <result property="remark"           column="remark"            />
+    </resultMap>
+
+    <resultMap type="OptionSettlementSync" id="OptionSettlementSyncResult">
+        <id     property="syncId"            column="sync_id"             />
+        <result property="feedSyncId"        column="feed_sync_id"        />
+        <result property="feedResult"        column="feed_result"         />
+        <result property="marketDay"         column="market_day"          />
+        <result property="result"            column="result"              />
+        <result property="recordCount"       column="record_count"        />
+        <result property="midtermCount"      column="midterm_count"       />
+        <result property="cardCount"         column="card_count"          />
+        <result property="statCount"         column="stat_count"          />
+        <result property="settledCount"      column="settled_count"       />
+        <result property="settledPnlUsd"     column="settled_pnl_usd"     />
+        <result property="rawPnlUsd"         column="raw_pnl_usd"         />
+        <result property="protectionCostUsd" column="protection_cost_usd" />
+        <result property="manageCostUsd"     column="manage_cost_usd"     />
+        <result property="manageCreditUsd"   column="manage_credit_usd"   />
+        <result property="newVersionCount"   column="new_version_count"   />
+        <result property="changedKinds"      column="changed_kinds"       />
+        <result property="costMs"            column="cost_ms"             />
+        <result property="message"           column="message"             />
+        <result property="triggerType"       column="trigger_type"        />
+        <result property="syncTime"          column="sync_time"           />
+        <result property="syncTimeUtc"       column="sync_time_utc"       />
+        <result property="createBy"          column="create_by"           />
+        <result property="createTime"        column="create_time"         />
+        <result property="createTimeUtc"     column="create_time_utc"     />
+    </resultMap>
+
+    <sql id="selectItemColumns">
+        version_id, item_key, content_hash, record_type, symbol, signal_id, recommendation_id, parent_signal_id, intent,
+        structure, expiry_date, status_code, result_kind, settled_day, issued_day, pnl_usd, emitted_time,
+        emitted_time_utc, settled_time, settled_time_utc, sort_no, first_sync_id, last_sync_id, create_by, create_time,
+        create_time_utc, update_by, update_time, update_time_utc, remark
+    </sql>
+
+    <sql id="selectSyncVo">
+        select sync_id, feed_sync_id, feed_result, market_day, result, record_count, midterm_count, card_count,
+               stat_count, settled_count, settled_pnl_usd, raw_pnl_usd, protection_cost_usd, manage_cost_usd,
+               manage_credit_usd, new_version_count, changed_kinds, cost_ms, message, trigger_type, sync_time,
+               sync_time_utc, create_by, create_time, create_time_utc
+        from option_settlement_sync
+    </sql>
+
+    <select id="selectVersionKeys" resultMap="OptionSettlementItemResult">
+        select version_id, item_key, content_hash from ${tableName}
+        where item_key in
+        <foreach collection="itemKeys" item="k" open="(" separator="," close=")">#{k}</foreach>
+    </select>
+
+    <insert id="insertItem" useGeneratedKeys="true" keyProperty="item.versionId" keyColumn="version_id">
+        insert into ${tableName} (item_key, content_hash, record_type, symbol, signal_id, recommendation_id,
+            parent_signal_id, intent, structure, expiry_date, status_code, result_kind, settled_day, issued_day, pnl_usd,
+            emitted_time, emitted_time_utc, settled_time, settled_time_utc, sort_no, payload, first_sync_id,
+            last_sync_id, create_by, create_time, create_time_utc, update_by, update_time, update_time_utc, remark)
+        values (#{item.itemKey}, #{item.contentHash}, #{item.recordType}, #{item.symbol}, #{item.signalId},
+            #{item.recommendationId}, #{item.parentSignalId}, #{item.intent}, #{item.structure}, #{item.expiryDate},
+            #{item.statusCode}, #{item.resultKind}, #{item.settledDay}, #{item.issuedDay}, #{item.pnlUsd},
+            #{item.emittedTime}, date_sub(#{item.emittedTime}, interval 8 hour),
+            #{item.settledTime}, date_sub(#{item.settledTime}, interval 8 hour), #{item.sortNo},
+            #{item.payload}, #{item.firstSyncId}, #{item.lastSyncId}, #{item.createBy},
+            date_add(utc_timestamp(), interval 8 hour), utc_timestamp(), #{item.createBy},
+            date_add(utc_timestamp(), interval 8 hour), utc_timestamp(), #{item.remark})
+    </insert>
+
+    <update id="touchItems">
+        update ${tableName}
+        set last_sync_id = #{syncId},
+            sort_no = case version_id
+                <foreach collection="items" item="i">when #{i.versionId} then #{i.sortNo} </foreach>
+                else sort_no end,
+            update_by = #{updateBy},
+            update_time = date_add(utc_timestamp(), interval 8 hour),
+            update_time_utc = utc_timestamp()
+        where version_id in
+        <foreach collection="items" item="i" open="(" separator="," close=")">#{i.versionId}</foreach>
+    </update>
+
+    <select id="selectItemsBySync" resultMap="OptionSettlementItemResult">
+        select <include refid="selectItemColumns"/>, payload
+        from ${tableName}
+        where last_sync_id = #{syncId}
+        order by sort_no, version_id
+    </select>
+
+    <select id="selectItemList" resultMap="OptionSettlementItemResult">
+        select <include refid="selectItemColumns"/>
+        from ${tableName}
+        <where>
+            <if test="item.itemKey != null and item.itemKey != ''">and item_key = #{item.itemKey}</if>
+            <if test="item.recordType != null and item.recordType != ''">and record_type = #{item.recordType}</if>
+            <if test="item.symbol != null and item.symbol != ''">and symbol = #{item.symbol}</if>
+            <if test="item.resultKind != null and item.resultKind != ''">and result_kind = #{item.resultKind}</if>
+            <if test="item.settledDay != null and item.settledDay != ''">and settled_day = #{item.settledDay}</if>
+            <if test="item.expiryDate != null and item.expiryDate != ''">and expiry_date = #{item.expiryDate}</if>
+            <if test="item.lastSyncId != null">and last_sync_id = #{item.lastSyncId}</if>
+        </where>
+        order by version_id desc
+    </select>
+
+    <select id="selectItemById" resultMap="OptionSettlementItemResult">
+        select <include refid="selectItemColumns"/>, payload
+        from ${tableName}
+        where version_id = #{versionId}
+    </select>
+
+    <insert id="insertSettlementSync" parameterType="OptionSettlementSync" useGeneratedKeys="true" keyProperty="syncId">
+        insert into option_settlement_sync (feed_sync_id, feed_result, market_day, result, message, trigger_type,
+            sync_time, sync_time_utc, create_by, create_time, create_time_utc)
+        values (#{feedSyncId}, #{feedResult}, #{marketDay}, #{result}, #{message}, #{triggerType},
+            date_add(utc_timestamp(), interval 8 hour), utc_timestamp(), #{createBy},
+            date_add(utc_timestamp(), interval 8 hour), utc_timestamp())
+    </insert>
+
+    <update id="updateSettlementSync" parameterType="OptionSettlementSync">
+        update option_settlement_sync
+        <set>
+            <if test="result != null and result != ''">result = #{result},</if>
+            <if test="recordCount != null">record_count = #{recordCount},</if>
+            <if test="midtermCount != null">midterm_count = #{midtermCount},</if>
+            <if test="cardCount != null">card_count = #{cardCount},</if>
+            <if test="statCount != null">stat_count = #{statCount},</if>
+            <if test="settledCount != null">settled_count = #{settledCount},</if>
+            <if test="settledPnlUsd != null">settled_pnl_usd = #{settledPnlUsd},</if>
+            <if test="rawPnlUsd != null">raw_pnl_usd = #{rawPnlUsd},</if>
+            <if test="protectionCostUsd != null">protection_cost_usd = #{protectionCostUsd},</if>
+            <if test="manageCostUsd != null">manage_cost_usd = #{manageCostUsd},</if>
+            <if test="manageCreditUsd != null">manage_credit_usd = #{manageCreditUsd},</if>
+            <if test="newVersionCount != null">new_version_count = #{newVersionCount},</if>
+            <if test="changedKinds != null">changed_kinds = #{changedKinds},</if>
+            <if test="costMs != null">cost_ms = #{costMs},</if>
+            <if test="message != null">message = #{message},</if>
+        </set>
+        where sync_id = #{syncId}
+    </update>
+
+    <select id="selectLatestUpdatedSync" resultMap="OptionSettlementSyncResult">
+        <include refid="selectSyncVo"/>
+        where result = 'UPDATED'
+        order by sync_id desc
+        limit 1
+    </select>
+
+    <select id="selectSettlementSyncList" parameterType="OptionSettlementSync" resultMap="OptionSettlementSyncResult">
+        <include refid="selectSyncVo"/>
+        <where>
+            <if test="result != null and result != ''">and result = #{result}</if>
+            <if test="marketDay != null and marketDay != ''">and market_day = #{marketDay}</if>
+            <if test="triggerType != null and triggerType != ''">and trigger_type = #{triggerType}</if>
+        </where>
+        order by sync_id desc
+    </select>
+
+</mapper>
