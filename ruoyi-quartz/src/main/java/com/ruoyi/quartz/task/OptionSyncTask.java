@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.option.service.IOptionAcademyService;
 import com.ruoyi.option.service.IOptionConductService;
 import com.ruoyi.option.service.IOptionFeedSyncService;
 import com.ruoyi.option.service.IOptionFollowService;
@@ -29,6 +30,8 @@ import com.ruoyi.option.service.IOptionSettlementService;
  *          optionSyncTask.syncSettlementNow()（结算菜单强制同步，忽略交易时段）
  *          optionSyncTask.syncRecord()（战绩菜单，每分钟；feed / decisions 仅交易时段请求，来源变化时重算）
  *          optionSyncTask.syncRecordNow()（战绩菜单强制同步，忽略交易时段）
+ *          optionSyncTask.syncAcademy()（学堂菜单，每 30 分钟；抓取学堂页面，内容变化时写库）
+ *          optionSyncTask.syncAcademyNow()（学堂菜单强制同步）
  * 
  * @author yscandice
  */
@@ -57,6 +60,9 @@ public class OptionSyncTask
 
     @Autowired
     private IOptionRecordService recordService;
+
+    @Autowired
+    private IOptionAcademyService academyService;
 
     /**
      * 交易时段同步 feed
@@ -233,6 +239,33 @@ public class OptionSyncTask
         if ("FAILED".equals(state) || "PAUSED".equals(state) || "SKIPPED".equals(state))
         {
             throw new ServiceException("战绩菜单同步未完成：" + result);
+        }
+    }
+
+    /**
+     * 同步学堂菜单（学堂首页 / 课程 / 一周问答 / 术语速查）
+     */
+    public void syncAcademy()
+    {
+        Map<String, Object> result = academyService.sync(false, "JOB", "system");
+        log.debug("optionSyncTask.syncAcademy {}", result);
+        if ("FAILED".equals(result.get("result")))
+        {
+            throw new ServiceException("学堂菜单同步失败：" + result);
+        }
+    }
+
+    /**
+     * 立即同步学堂菜单（强制重新发布），失败或会话暂停时任务记为失败
+     */
+    public void syncAcademyNow()
+    {
+        Map<String, Object> result = academyService.sync(true, "JOB", "system");
+        log.info("optionSyncTask.syncAcademyNow {}", result);
+        Object state = result.get("result");
+        if ("FAILED".equals(state) || "PAUSED".equals(state) || "SKIPPED".equals(state))
+        {
+            throw new ServiceException("学堂菜单同步未完成：" + result);
         }
     }
 }
