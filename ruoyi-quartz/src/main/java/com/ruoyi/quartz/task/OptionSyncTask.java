@@ -11,6 +11,7 @@ import com.ruoyi.option.service.IOptionFeedSyncService;
 import com.ruoyi.option.service.IOptionFollowService;
 import com.ruoyi.option.service.IOptionInfoService;
 import com.ruoyi.option.service.IOptionResourceService;
+import com.ruoyi.option.service.IOptionSettlementService;
 
 /**
  * 期权 OSM 数据同步任务
@@ -23,6 +24,8 @@ import com.ruoyi.option.service.IOptionResourceService;
  *          optionSyncTask.syncAllInfoNow()（信息菜单全部 5 个接口）
  *          optionSyncTask.syncConduct()（进行菜单，每分钟；feed 仅交易时段请求，批次或交易日变化时重算栏目）
  *          optionSyncTask.syncConductNow()（进行菜单强制同步，忽略交易时段）
+ *          optionSyncTask.syncSettlement()（结算菜单，每分钟；feed 仅交易时段请求，批次或交易日变化时重算）
+ *          optionSyncTask.syncSettlementNow()（结算菜单强制同步，忽略交易时段）
  * 
  * @author yscandice
  */
@@ -45,6 +48,9 @@ public class OptionSyncTask
 
     @Autowired
     private IOptionFollowService followService;
+
+    @Autowired
+    private IOptionSettlementService settlementService;
 
     /**
      * 交易时段同步 feed
@@ -167,6 +173,33 @@ public class OptionSyncTask
         if ("FAILED".equals(state) || "PAUSED".equals(state) || "SKIPPED".equals(state))
         {
             throw new ServiceException("跟踪菜单同步未完成：" + result);
+        }
+    }
+
+    /**
+     * 同步结算菜单（已结算 / 结算单 / 结算统计）
+     */
+    public void syncSettlement()
+    {
+        Map<String, Object> result = settlementService.sync(false, "JOB", "system");
+        log.debug("optionSyncTask.syncSettlement {}", result);
+        if ("FAILED".equals(result.get("result")))
+        {
+            throw new ServiceException("结算菜单同步失败：" + result);
+        }
+    }
+
+    /**
+     * 立即同步结算菜单（忽略交易时段并强制重算），失败或会话暂停时任务记为失败
+     */
+    public void syncSettlementNow()
+    {
+        Map<String, Object> result = settlementService.sync(true, "JOB", "system");
+        log.info("optionSyncTask.syncSettlementNow {}", result);
+        Object state = result.get("result");
+        if ("FAILED".equals(state) || "PAUSED".equals(state) || "SKIPPED".equals(state))
+        {
+            throw new ServiceException("结算菜单同步未完成：" + result);
         }
     }
 }
