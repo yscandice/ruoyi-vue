@@ -10,6 +10,7 @@ import com.ruoyi.option.service.IOptionConductService;
 import com.ruoyi.option.service.IOptionFeedSyncService;
 import com.ruoyi.option.service.IOptionFollowService;
 import com.ruoyi.option.service.IOptionInfoService;
+import com.ruoyi.option.service.IOptionRecordService;
 import com.ruoyi.option.service.IOptionResourceService;
 import com.ruoyi.option.service.IOptionSettlementService;
 
@@ -26,6 +27,8 @@ import com.ruoyi.option.service.IOptionSettlementService;
  *          optionSyncTask.syncConductNow()（进行菜单强制同步，忽略交易时段）
  *          optionSyncTask.syncSettlement()（结算菜单，每分钟；feed 仅交易时段请求，批次或交易日变化时重算）
  *          optionSyncTask.syncSettlementNow()（结算菜单强制同步，忽略交易时段）
+ *          optionSyncTask.syncRecord()（战绩菜单，每分钟；feed / decisions 仅交易时段请求，来源变化时重算）
+ *          optionSyncTask.syncRecordNow()（战绩菜单强制同步，忽略交易时段）
  * 
  * @author yscandice
  */
@@ -51,6 +54,9 @@ public class OptionSyncTask
 
     @Autowired
     private IOptionSettlementService settlementService;
+
+    @Autowired
+    private IOptionRecordService recordService;
 
     /**
      * 交易时段同步 feed
@@ -200,6 +206,33 @@ public class OptionSyncTask
         if ("FAILED".equals(state) || "PAUSED".equals(state) || "SKIPPED".equals(state))
         {
             throw new ServiceException("结算菜单同步未完成：" + result);
+        }
+    }
+
+    /**
+     * 同步战绩菜单（战绩明细 / 每日结算净额 / 按标的 / 战绩统计 / 账户模拟）
+     */
+    public void syncRecord()
+    {
+        Map<String, Object> result = recordService.sync(false, "JOB", "system");
+        log.debug("optionSyncTask.syncRecord {}", result);
+        if ("FAILED".equals(result.get("result")))
+        {
+            throw new ServiceException("战绩菜单同步失败：" + result);
+        }
+    }
+
+    /**
+     * 立即同步战绩菜单（忽略交易时段并强制重算），失败或会话暂停时任务记为失败
+     */
+    public void syncRecordNow()
+    {
+        Map<String, Object> result = recordService.sync(true, "JOB", "system");
+        log.info("optionSyncTask.syncRecordNow {}", result);
+        Object state = result.get("result");
+        if ("FAILED".equals(state) || "PAUSED".equals(state) || "SKIPPED".equals(state))
+        {
+            throw new ServiceException("战绩菜单同步未完成：" + result);
         }
     }
 }
