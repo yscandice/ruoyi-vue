@@ -8,19 +8,23 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.option.service.IOptionAccessService;
 import com.ruoyi.option.utils.OptionMarketCalendar;
 
 /**
- * 会员数据权限 后台管理（盘后视图放出预览；策略、冻结记录在后续步骤补充）
+ * 会员数据权限 后台管理（盘后视图放出预览、会员身份缓存；策略、冻结记录在后续步骤补充）
  * 
  * @author yscandice
  */
@@ -45,6 +49,20 @@ public class OptionAccessAdminController extends BaseController
             @RequestParam(value = "zone", required = false) String zone)
     {
         return success(accessService.resolveReleaseWindow(parseTime(at, zone)));
+    }
+
+    /**
+     * 删除会员身份缓存：直接改库（如 trial_end_time）后调用，会员的下一次请求立即按新身份返回
+     * 
+     * @param userIds 用户ID，多个用英文逗号分隔
+     */
+    @PreAuthorize("@ss.hasPermi('option:access:edit')")
+    @Log(title = "会员身份缓存", businessType = BusinessType.CLEAN)
+    @DeleteMapping("/cache/{userIds}")
+    public AjaxResult clearCache(@PathVariable Long[] userIds)
+    {
+        accessService.clearAccessCache(userIds);
+        return success();
     }
 
     private static ZonedDateTime parseTime(String at, String zone)

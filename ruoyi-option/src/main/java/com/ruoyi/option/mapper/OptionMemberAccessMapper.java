@@ -1,6 +1,7 @@
 package com.ruoyi.option.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import com.ruoyi.option.domain.OptionMemberAccess;
 
 /**
@@ -49,6 +50,15 @@ public interface OptionMemberAccessMapper
      * @return 结果
      */
     public int updateOptionMemberAccess(OptionMemberAccess optionMemberAccess);
+
+    /**
+     * 回写最近一次计算的身份（仅用于统计，不改更新时间）
+     * 
+     * @param userId 用户ID
+     * @param level 身份代码
+     * @return 结果
+     */
+    public int updateOptionMemberAccessLevel(@Param("userId") Long userId, @Param("level") String level);
 
     /**
      * 删除会员权限档案

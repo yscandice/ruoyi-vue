@@ -275,3 +275,10 @@ from (
   union all select '2027-12-24', '0', null, null, '0', '圣诞节（补休）'
 ) t
 where not exists (select 1 from option_market_calendar c where c.trade_date = t.trade_date);
+
+-- ----------------------------
+-- 14、定时任务（文档 7.5、13.2 步骤 4）：会员身份回写；盘后视图冻结、冻结数据清理在步骤 5 登记
+-- ----------------------------
+insert into sys_job (job_name, job_group, invoke_target, cron_expression, misfire_policy, concurrent, status, create_by, create_time, remark)
+select '会员身份回写', 'DEFAULT', 'optionAccessTask.refreshLevels()', '0 15 * * * ?', '3', '1', '0', 'admin', sysdate(), '按 3.1 规则重新计算全部会员身份并回写 option_member_access.level，仅用于后台统计和展示'
+from dual where not exists (select 1 from sys_job where invoke_target = 'optionAccessTask.refreshLevels()');

@@ -128,6 +128,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where user_id = #{userId}
     </update>
 
+    <update id="updateOptionMemberAccessLevel">
+        update option_member_access set level = #{level} where user_id = #{userId} and level != #{level}
+    </update>
+
     <delete id="deleteOptionMemberAccessById" parameterType="Long">
         delete from option_member_access where user_id = #{userId}
     </delete>

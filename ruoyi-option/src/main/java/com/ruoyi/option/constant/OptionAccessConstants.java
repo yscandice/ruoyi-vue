@@ -37,6 +37,24 @@ public class OptionAccessConstants
     /** 交易日历缓存时长（小时） */
     public static final int MARKET_CALENDAR_TTL_HOURS = 24;
 
+    /** Redis：会员身份计算结果 option:member:access:{userId} */
+    public static final String MEMBER_ACCESS_KEY = "option:member:access:";
+
+    /** 会员身份缓存最长时长（秒），并且不超过体验期 / 付费期剩余时长 */
+    public static final int MEMBER_ACCESS_TTL_SECONDS = 300;
+
+    /** 若依角色：超级管理员 */
+    public static final String ROLE_ADMIN = "admin";
+
+    /** 若依角色：期权内部人员 */
+    public static final String ROLE_STAFF = "option_staff";
+
+    /** 若依角色：网站会员 */
+    public static final String ROLE_MEMBER = "option_member";
+
+    /** 策略：盘后版看收盘冻结数据 */
+    public static final String MODE_CLOSE_SNAPSHOT = "CLOSE_SNAPSHOT";
+
     private OptionAccessConstants()
     {
     }
