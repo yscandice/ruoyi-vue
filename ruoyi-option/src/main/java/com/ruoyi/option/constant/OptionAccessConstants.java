@@ -55,6 +55,63 @@ public class OptionAccessConstants
     /** 策略：盘后版看收盘冻结数据 */
     public static final String MODE_CLOSE_SNAPSHOT = "CLOSE_SNAPSHOT";
 
+    /** 默认值：冻结数据保留 30 天 */
+    public static final int DEFAULT_SNAPSHOT_KEEP_DAYS = 30;
+
+    /** Redis：盘后视图前缀，option:conduct:active → option:delayed:conduct:active */
+    public static final String DELAYED_PREFIX = "option:delayed:";
+
+    /** Redis：放出时的临时前缀，全部写完后 RENAME 为正式前缀 */
+    public static final String DELAYED_TMP_PREFIX = "option:delayed:tmp:";
+
+    /** Redis：冻结任务锁（冻结 / 放出 / 恢复共用） */
+    public static final String FREEZE_LOCK_KEY = "option:access:freeze:lock";
+
+    /** 冻结任务锁时长（分钟） */
+    public static final int FREEZE_LOCK_MINUTES = 10;
+
+    /** Redis：最近一次冻结状态 */
+    public static final String FREEZE_STATUS_KEY = "option:access:freeze:status";
+
+    /** Redis：当前放出的冻结记录 {tradeDate, snapshotId, releasedAt} */
+    public static final String RELEASE_CURRENT_KEY = "option:access:release:current";
+
+    /** 冻结结果：成功 / 部分成功 / 失败 */
+    public static final String RESULT_SUCCESS = "SUCCESS";
+
+    public static final String RESULT_PARTIAL = "PARTIAL";
+
+    public static final String RESULT_FAILED = "FAILED";
+
+    /** 放出状态：已冻结未放出 / 已放出 / 已被后续放出替代 */
+    public static final String STATUS_FROZEN = "FROZEN";
+
+    public static final String STATUS_RELEASED = "RELEASED";
+
+    public static final String STATUS_EXPIRED = "EXPIRED";
+
+    /** 触发方式：定时任务 / 手动 */
+    public static final String TRIGGER_JOB = "JOB";
+
+    public static final String TRIGGER_MANUAL = "MANUAL";
+
+    /** feed 的当前批次指针与批次数据前缀（冻结时只取当前批次） */
+    public static final String FEED_PREFIX = "option:feed:";
+
+    public static final String FEED_CURRENT_KEY = "option:feed:current";
+
+    public static final String FEED_DATA_PREFIX = "option:feed:data:";
+
+    /** 冻结时跳过的键：同步状态、锁等运行键，以及同步账号的个人数据（推荐码） */
+    public static final String[] FREEZE_SKIP_SEGMENTS = { ":sync:", ":rebuild:" };
+
+    public static final String[] FREEZE_SKIP_SUFFIXES = { ":lock" };
+
+    public static final String[] FREEZE_SKIP_PREFIXES = { "option:info:referrals" };
+
+    /** 各菜单同步状态键后缀：{前缀}sync:status */
+    public static final String SYNC_STATUS_SUFFIX = "sync:status";
+
     private OptionAccessConstants()
     {
     }

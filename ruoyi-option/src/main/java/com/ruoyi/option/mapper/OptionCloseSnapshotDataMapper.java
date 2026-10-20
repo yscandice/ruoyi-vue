@@ -1,6 +1,7 @@
 package com.ruoyi.option.mapper;
 
 import java.util.List;
+import java.util.Map;
 import com.ruoyi.option.domain.OptionCloseSnapshotData;
 
 /**
@@ -73,4 +74,12 @@ public interface OptionCloseSnapshotDataMapper
      * @return 结果
      */
     public int deleteOptionCloseSnapshotDataByIds(Long[] dataIds);
+
+    /**
+     * 按菜单统计冻结记录的键数量与存储字节数（gzip 后）
+     * 
+     * @param snapshotId 冻结ID
+     * @return resourceCode / keyCount / storedBytes
+     */
+    public List<Map<String, Object>> selectSnapshotDataStats(Long snapshotId);
 }

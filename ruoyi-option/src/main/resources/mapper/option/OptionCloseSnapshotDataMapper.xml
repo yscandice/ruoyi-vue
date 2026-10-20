@@ -63,6 +63,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <insert id="insertOptionCloseSnapshotData" parameterType="OptionCloseSnapshotData" useGeneratedKeys="true" keyProperty="dataId">
         insert into option_close_snapshot_data
         <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="snapshotId != null">snapshot_id,</if>
             <if test="resourceCode != null and resourceCode != ''">resource_code,</if>
             <if test="redisKey != null and redisKey != ''">redis_key,</if>
             <if test="valueType != null and valueType != ''">value_type,</if>
@@ -71,6 +72,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             create_time,
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="snapshotId != null">#{snapshotId},</if>
             <if test="resourceCode != null and resourceCode != ''">#{resourceCode},</if>
             <if test="redisKey != null and redisKey != ''">#{redisKey},</if>
             <if test="valueType != null and valueType != ''">#{valueType},</if>
@@ -80,6 +82,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </trim>
     </insert>
 
+
+    <select id="selectSnapshotDataStats" parameterType="Long" resultType="java.util.LinkedHashMap">
+        select resource_code as resourceCode, count(1) as keyCount, sum(length(payload)) as storedBytes
+        from option_close_snapshot_data
+        where snapshot_id = #{snapshotId}
+        group by resource_code
+        order by resource_code
+    </select>
 
     <delete id="deleteOptionCloseSnapshotDataById" parameterType="Long">
         delete from option_close_snapshot_data where data_id = #{dataId}

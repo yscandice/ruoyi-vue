@@ -52,6 +52,30 @@ public interface OptionCloseSnapshotMapper
     public OptionCloseSnapshot selectOptionCloseSnapshotBefore(@Param("tradeDate") LocalDate tradeDate);
 
     /**
+     * 查询指定交易日及之前最近一份冻结成功（SUCCESS / PARTIAL）的记录
+     * 
+     * @param tradeDate 交易日
+     * @return 冻结记录
+     */
+    public OptionCloseSnapshot selectSuccessSnapshotOnOrBefore(@Param("tradeDate") LocalDate tradeDate);
+
+    /**
+     * 查询早于指定交易日、且当前未放出的冻结记录ID（清理用）
+     * 
+     * @param tradeDate 交易日
+     * @return 冻结ID集合
+     */
+    public List<Long> selectExpiredSnapshotIds(@Param("tradeDate") LocalDate tradeDate);
+
+    /**
+     * 把其它已放出的记录标记为已被替代（EXPIRED）
+     * 
+     * @param snapshotId 本次放出的冻结ID
+     * @return 结果
+     */
+    public int expireReleasedSnapshots(@Param("snapshotId") Long snapshotId);
+
+    /**
      * 新增盘后视图冻结记录
      * 
      * @param optionCloseSnapshot 盘后视图冻结记录

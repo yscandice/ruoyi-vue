@@ -282,3 +282,32 @@ where not exists (select 1 from option_market_calendar c where c.trade_date = t.
 insert into sys_job (job_name, job_group, invoke_target, cron_expression, misfire_policy, concurrent, status, create_by, create_time, remark)
 select '会员身份回写', 'DEFAULT', 'optionAccessTask.refreshLevels()', '0 15 * * * ?', '3', '1', '0', 'admin', sysdate(), '按 3.1 规则重新计算全部会员身份并回写 option_member_access.level，仅用于后台统计和展示'
 from dual where not exists (select 1 from sys_job where invoke_target = 'optionAccessTask.refreshLevels()');
+
+insert into sys_job (job_name, job_group, invoke_target, cron_expression, misfire_policy, concurrent, status, create_by, create_time, remark)
+select 'OSM盘后视图冻结', 'DEFAULT', 'optionAccessTask.freezeClose()', '0 0/5 * * * ?', '3', '1', '0', 'admin', sysdate(), '每 5 分钟检查：交易日收盘冻结点（收盘 + option.access.closeBufferMinutes）后冻结当天各菜单数据（只存库），并放出前 option.access.delayedLagSessions 个交易日的冻结数据；同一交易日只冻结、放出各一次'
+from dual where not exists (select 1 from sys_job where invoke_target = 'optionAccessTask.freezeClose()');
+
+insert into sys_job (job_name, job_group, invoke_target, cron_expression, misfire_policy, concurrent, status, create_by, create_time, remark)
+select '盘后冻结数据清理', 'DEFAULT', 'optionAccessTask.cleanSnapshots()', '0 30 4 * * ?', '3', '1', '0', 'admin', sysdate(), '删除超过 option.access.snapshotKeepDays 天的冻结记录与冻结数据，当前放出的记录不删'
+from dual where not exists (select 1 from sys_job where invoke_target = 'optionAccessTask.cleanSnapshots()');
+
+-- ----------------------------
+-- 15、菜单数据权限策略初始数据（文档 3.6）：冻结任务按 delayed_mode = CLOSE_SNAPSHOT 的菜单及其 redis_prefix 冻结；
+--     拦截器按 path_pattern 匹配菜单（步骤 6 接入），order_num 小的先匹配（today 的 /api/member/updates 是阅读进度，需排在 update 菜单之前）
+-- ----------------------------
+insert into option_access_policy (resource_code, resource_name, path_pattern, redis_prefix, realtime_mode, delayed_mode, order_num, status, create_by, create_time, create_time_utc, remark)
+select t.resource_code, t.resource_name, t.path_pattern, t.redis_prefix, t.realtime_mode, t.delayed_mode, t.order_num, '0', 'admin', date_add(utc_timestamp(), interval 8 hour), utc_timestamp(), t.remark
+from (
+  select 'today' resource_code, '今日' resource_name,
+         '/api/member/feed,/api/member/today/**,/api/member/premarket,/api/member/seller-guide,/api/member/entitlement,/api/member/decisions,/api/member/management-choices,/api/member/updates,/api/member/support' path_pattern,
+         'option:feed:,option:res:' redis_prefix, 'REALTIME' realtime_mode, 'CLOSE_SNAPSHOT' delayed_mode, 1 order_num, '信号核心；feed 只冻结当前批次' remark
+  union all select 'info', '信息', '/api/member/info-feed,/api/member/info/**', 'option:info:', 'REALTIME', 'CLOSE_SNAPSHOT', 2, '含盘前、财报、札记；不冻结同步账号推荐码'
+  union all select 'conduct', '进行', '/api/member/conduct,/api/member/conduct/**', 'option:conduct:', 'REALTIME', 'CLOSE_SNAPSHOT', 3, null
+  union all select 'follow', '跟踪', '/api/member/follow,/api/member/follow/**', 'option:follow:', 'REALTIME', 'CLOSE_SNAPSHOT', 4, null
+  union all select 'settlement', '结算', '/api/member/settlement,/api/member/settlement/**', 'option:settlement:', 'REALTIME', 'CLOSE_SNAPSHOT', 5, null
+  union all select 'record', '战绩', '/api/member/record,/api/member/record/**', 'option:record:', 'REALTIME', 'CLOSE_SNAPSHOT', 6, null
+  union all select 'academy', '学堂', '/api/member/academy,/api/member/academy/**', 'option:academy:', 'REALTIME', 'REALTIME', 7, '教学内容不怕延迟'
+  union all select 'update', '更新', '/api/member/updates/**', 'option:update:', 'REALTIME', 'REALTIME', 8, '产品更新内容'
+  union all select 'settings', '设置', '/api/member/settings/**,/api/member/profile,/api/member/notifications,/api/member/password,/api/member/avatar,/api/member/referrals,/api/member/push,/api/member/api-keys,/api/member/advisory-contact', null, 'SELF', 'SELF', 9, '本人数据，不走同步'
+) t
+where not exists (select 1 from option_access_policy p where p.resource_code = t.resource_code);

@@ -6,25 +6,32 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.option.domain.OptionCloseSnapshot;
 import com.ruoyi.option.service.IOptionAccessService;
+import com.ruoyi.option.service.IOptionCloseSnapshotService;
 import com.ruoyi.option.utils.OptionMarketCalendar;
 
 /**
- * 会员数据权限 后台管理（盘后视图放出预览、会员身份缓存；策略、冻结记录在后续步骤补充）
+ * 会员数据权限 后台管理（盘后视图放出预览、会员身份缓存、冻结记录；策略管理在步骤 6 补充）
  * 
  * @author yscandice
  */
@@ -36,6 +43,75 @@ public class OptionAccessAdminController extends BaseController
 
     @Autowired
     private IOptionAccessService accessService;
+
+    @Autowired
+    private IOptionCloseSnapshotService closeSnapshotService;
+
+    /**
+     * 冻结记录列表
+     */
+    @PreAuthorize("@ss.hasPermi('option:access:list')")
+    @GetMapping("/snapshot/list")
+    public TableDataInfo snapshotList(OptionCloseSnapshot snapshot)
+    {
+        startPage();
+        List<OptionCloseSnapshot> list = closeSnapshotService.selectOptionCloseSnapshotList(snapshot);
+        return getDataTable(list);
+    }
+
+    /**
+     * 盘后视图状态：最近一次冻结、当前放出记录、各菜单实时键与盘后键数量对比
+     */
+    @PreAuthorize("@ss.hasPermi('option:access:list')")
+    @GetMapping("/snapshot/status")
+    public AjaxResult snapshotStatus()
+    {
+        return success(closeSnapshotService.selectViewStatus());
+    }
+
+    /**
+     * 冻结记录详情（含各菜单键数量与存储字节数）
+     */
+    @PreAuthorize("@ss.hasPermi('option:access:list')")
+    @GetMapping("/snapshot/{snapshotId}")
+    public AjaxResult snapshotInfo(@PathVariable Long snapshotId)
+    {
+        return success(closeSnapshotService.selectOptionCloseSnapshotById(snapshotId));
+    }
+
+    /**
+     * 手动冻结当天 { "force": false }：已冻结或未到收盘冻结点时需要 force = true
+     */
+    @PreAuthorize("@ss.hasPermi('option:access:edit')")
+    @Log(title = "盘后视图冻结", businessType = BusinessType.OTHER)
+    @PostMapping("/snapshot/freeze")
+    public AjaxResult freeze(@RequestBody(required = false) Map<String, Object> body)
+    {
+        boolean force = body != null && Boolean.parseBoolean(String.valueOf(body.get("force")));
+        return success(closeSnapshotService.freeze(force, getUsername()));
+    }
+
+    /**
+     * 手动放出指定冻结记录（首次上线、补放）
+     */
+    @PreAuthorize("@ss.hasPermi('option:access:edit')")
+    @Log(title = "盘后视图放出", businessType = BusinessType.OTHER)
+    @PostMapping("/snapshot/{snapshotId}/release")
+    public AjaxResult release(@PathVariable Long snapshotId)
+    {
+        return success(closeSnapshotService.release(snapshotId));
+    }
+
+    /**
+     * 用指定冻结记录回填 Redis 盘后视图
+     */
+    @PreAuthorize("@ss.hasPermi('option:access:edit')")
+    @Log(title = "盘后视图恢复", businessType = BusinessType.OTHER)
+    @PostMapping("/snapshot/{snapshotId}/restore")
+    public AjaxResult restore(@PathVariable Long snapshotId)
+    {
+        return success(closeSnapshotService.restore(snapshotId));
+    }
 
     /**
      * 预览某个时间点盘后版看到的交易日、放出时间与下次放出时间

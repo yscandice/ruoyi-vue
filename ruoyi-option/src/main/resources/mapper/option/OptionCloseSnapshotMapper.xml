@@ -73,6 +73,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         limit 1
     </select>
 
+    <select id="selectSuccessSnapshotOnOrBefore" resultMap="OptionCloseSnapshotResult">
+        <include refid="selectOptionCloseSnapshotVo"/>
+        where trade_date &lt;= #{tradeDate} and result in ('SUCCESS', 'PARTIAL')
+        order by trade_date desc
+        limit 1
+    </select>
+
+    <select id="selectExpiredSnapshotIds" resultType="Long">
+        select snapshot_id from option_close_snapshot
+        where trade_date &lt; #{tradeDate} and status != 'RELEASED'
+        order by trade_date
+    </select>
+
+    <update id="expireReleasedSnapshots">
+        update option_close_snapshot set status = 'EXPIRED'
+        where status = 'RELEASED' and snapshot_id != #{snapshotId}
+    </update>
+
     <insert id="insertOptionCloseSnapshot" parameterType="OptionCloseSnapshot" useGeneratedKeys="true" keyProperty="snapshotId">
         insert into option_close_snapshot
         <trim prefix="(" suffix=")" suffixOverrides=",">
