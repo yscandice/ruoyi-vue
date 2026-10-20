@@ -1,5 +1,6 @@
 package com.ruoyi.option.mapper;
 
+import java.util.Date;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import com.ruoyi.option.domain.OptionMemberAccess;
@@ -34,6 +35,15 @@ public interface OptionMemberAccessMapper
      * @return 会员权限档案
      */
     public OptionMemberAccess selectOptionMemberAccessByEmail(String email);
+
+    /**
+     * 统计某个设备指纹在指定时间之后注册的会员数（同一设备 30 天内只给一次体验期）
+     * 
+     * @param deviceHash 设备指纹哈希
+     * @param since 起始时间（东八区）
+     * @return 会员数
+     */
+    public int countMemberByDevice(@Param("deviceHash") String deviceHash, @Param("since") Date since);
 
     /**
      * 新增会员权限档案

@@ -58,6 +58,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where email = #{email}
     </select>
 
+    <select id="countMemberByDevice" resultType="int">
+        select count(1) from option_member_access where device_hash = #{deviceHash} and register_time &gt;= #{since}
+    </select>
+
     <insert id="insertOptionMemberAccess" parameterType="OptionMemberAccess">
         insert into option_member_access
         <trim prefix="(" suffix=")" suffixOverrides=",">

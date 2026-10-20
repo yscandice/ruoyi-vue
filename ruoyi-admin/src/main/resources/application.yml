@@ -96,6 +96,25 @@ spring:
           max-active: 8
           # #连接池最大阻塞等待时间（使用负值表示没有限制）
           max-wait: -1ms
+  # 邮件（会员注册验证码，技术文档 9.3.5）：账号和授权码只用环境变量传入，不写进 Git
+  mail:
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    default-encoding: UTF-8
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.ssl.enable: ${MAIL_SSL:true}
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
+
+# 期权会员邮件
+option:
+  mail:
+    # 发件人名称（显示为「发件人名称 <MAIL_USERNAME>」）
+    from-name: ${MAIL_FROM_NAME:期权信号}
 
 # token配置
 token:
