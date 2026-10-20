@@ -92,4 +92,48 @@ public class OptionJson
     {
         return "W/\"" + sha256(text).substring(0, 24) + "\"";
     }
+
+    /**
+     * 按原 JSON 生成同结构的空数据（盘后视图读不到时 delayedFallback = EMPTY 使用）：
+     * 对象保留字段、数组置空、字符串置空串、数字置 0、布尔置 false，不带任何实际数据
+     * 
+     * @param text 原 JSON 文本，为空时返回 {}
+     * @return 空结构 JSON
+     */
+    public static String emptyStructure(String text)
+    {
+        if (text == null || text.isBlank())
+        {
+            return "{}";
+        }
+        return write(emptyNode(read(text)));
+    }
+
+    private static JsonNode emptyNode(JsonNode node)
+    {
+        JsonNodeFactory factory = MAPPER.getNodeFactory();
+        if (node == null || node.isNull())
+        {
+            return factory.nullNode();
+        }
+        if (node.isObject())
+        {
+            com.fasterxml.jackson.databind.node.ObjectNode result = factory.objectNode();
+            node.properties().forEach(entry -> result.set(entry.getKey(), emptyNode(entry.getValue())));
+            return result;
+        }
+        if (node.isArray())
+        {
+            return factory.arrayNode();
+        }
+        if (node.isNumber())
+        {
+            return factory.numberNode(0);
+        }
+        if (node.isBoolean())
+        {
+            return factory.booleanNode(false);
+        }
+        return factory.textNode("");
+    }
 }

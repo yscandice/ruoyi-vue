@@ -79,4 +79,11 @@ public interface IOptionCloseSnapshotService
      * @return 状态
      */
     public Map<String, Object> selectViewStatus();
+
+    /**
+     * 当前放出记录（读取路由使用）：优先 Redis option:access:release:current，丢失时取库里最新 RELEASED
+     * 
+     * @return tradeDate / snapshotId / releasedAt / staleResources，还没有放出过时为 null
+     */
+    public Map<String, Object> selectReleaseCurrent();
 }

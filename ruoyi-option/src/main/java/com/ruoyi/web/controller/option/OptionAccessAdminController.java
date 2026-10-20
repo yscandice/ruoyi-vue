@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -25,13 +26,14 @@ import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.option.domain.OptionAccessPolicy;
 import com.ruoyi.option.domain.OptionCloseSnapshot;
 import com.ruoyi.option.service.IOptionAccessService;
 import com.ruoyi.option.service.IOptionCloseSnapshotService;
 import com.ruoyi.option.utils.OptionMarketCalendar;
 
 /**
- * 会员数据权限 后台管理（盘后视图放出预览、会员身份缓存、冻结记录；策略管理在步骤 6 补充）
+ * 会员数据权限 后台管理（菜单策略、盘后视图放出预览、会员身份缓存、冻结记录）
  * 
  * @author yscandice
  */
@@ -46,6 +48,40 @@ public class OptionAccessAdminController extends BaseController
 
     @Autowired
     private IOptionCloseSnapshotService closeSnapshotService;
+
+    /**
+     * 菜单策略列表
+     */
+    @PreAuthorize("@ss.hasPermi('option:access:list')")
+    @GetMapping("/policy/list")
+    public TableDataInfo policyList(OptionAccessPolicy policy)
+    {
+        startPage();
+        List<OptionAccessPolicy> list = accessService.selectPolicyList(policy);
+        return getDataTable(list);
+    }
+
+    /**
+     * 菜单策略详情
+     */
+    @PreAuthorize("@ss.hasPermi('option:access:list')")
+    @GetMapping("/policy/{policyId}")
+    public AjaxResult policyInfo(@PathVariable Long policyId)
+    {
+        return success(accessService.selectPolicyById(policyId));
+    }
+
+    /**
+     * 修改菜单策略（菜单编码不可修改，保存后立即生效）
+     */
+    @PreAuthorize("@ss.hasPermi('option:access:edit')")
+    @Log(title = "会员菜单策略", businessType = BusinessType.UPDATE)
+    @PutMapping("/policy/{policyId}")
+    public AjaxResult policyEdit(@PathVariable Long policyId, @RequestBody OptionAccessPolicy policy)
+    {
+        policy.setPolicyId(policyId);
+        return toAjax(accessService.updatePolicy(policy));
+    }
 
     /**
      * 冻结记录列表

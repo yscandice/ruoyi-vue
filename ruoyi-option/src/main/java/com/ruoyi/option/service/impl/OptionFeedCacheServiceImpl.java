@@ -13,7 +13,11 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.ruoyi.option.constant.OptionFeedConstants;
 import com.ruoyi.option.domain.OptionFeedSnapshot;
+import com.ruoyi.option.service.IOptionAccessService;
+import com.ruoyi.option.service.IOptionCloseSnapshotService;
 import com.ruoyi.option.service.IOptionFeedCacheService;
+import com.ruoyi.option.utils.OptionAccessContext;
+import com.ruoyi.option.utils.OptionCacheKeys;
 import com.ruoyi.option.utils.OptionJson;
 
 /**
@@ -37,6 +41,12 @@ public class OptionFeedCacheServiceImpl implements IOptionFeedCacheService
 
     @Autowired
     private OptionFeedAssembler assembler;
+
+    @Autowired
+    private IOptionCloseSnapshotService closeSnapshotService;
+
+    @Autowired
+    private IOptionAccessService accessService;
 
     @Override
     public void publish(OptionFeedSnapshot snapshot)
@@ -105,6 +115,60 @@ public class OptionFeedCacheServiceImpl implements IOptionFeedCacheService
         log.info("Redis 未命中 feed 分组 {}（批次 {}），从多表拼接回填", group, syncId);
         OptionFeedSnapshot snapshot = rebuild(syncId);
         return snapshot == null ? null : fromSnapshot(snapshot, group);
+    }
+
+    @Override
+    public FeedBody getView(String group)
+    {
+        if (!OptionAccessContext.isDelayed())
+        {
+            return get(group);
+        }
+        FeedBody body = readDelayed(group);
+        if (body == null && OptionAccessContext.hasRelease() && closeSnapshotService.restoreIfMissing())
+        {
+            body = readDelayed(group);
+        }
+        if (body != null)
+        {
+            return body;
+        }
+        if (accessService.isDelayedFallbackRealtime())
+        {
+            log.warn("盘后视图缺少 feed 分组 {}，按 delayedFallback=REALTIME 回落实时", group);
+            return get(group);
+        }
+        // 只借用实时数据的结构，不带任何实际值
+        FeedBody realtime = get(group);
+        String empty = OptionJson.emptyStructure(realtime == null ? null : realtime.body());
+        OptionAccessContext.markEmpty();
+        return new FeedBody(empty, OptionJson.etag(empty), null, null);
+    }
+
+    /**
+     * 读取盘后视图：option:delayed:feed:current → option:delayed:feed:data:{syncId}:{group}
+     */
+    private FeedBody readDelayed(String group)
+    {
+        String text = stringRedisTemplate.opsForValue().get(OptionCacheKeys.delayed(OptionFeedConstants.CURRENT_KEY));
+        if (text == null)
+        {
+            return null;
+        }
+        JsonNode meta = OptionJson.read(text);
+        if (meta == null || meta.get("syncId") == null)
+        {
+            return null;
+        }
+        Long syncId = meta.get("syncId").asLong();
+        String body = stringRedisTemplate.opsForValue().get(OptionCacheKeys.delayed(dataKey(syncId, group)));
+        if (body == null)
+        {
+            return null;
+        }
+        JsonNode etag = meta.path("etags").get(group);
+        return new FeedBody(body, etag == null ? OptionJson.etag(body) : etag.asText(), syncId,
+                meta.path("generatedAt").asText(null));
     }
 
     /**

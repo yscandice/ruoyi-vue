@@ -1,10 +1,12 @@
 package com.ruoyi.option.service.impl;
 
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,6 +16,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.AntPathMatcher;
+import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.system.service.ISysConfigService;
+import com.ruoyi.option.service.IOptionCloseSnapshotService;
+import com.ruoyi.option.utils.OptionAccessContext;
 import com.ruoyi.common.core.domain.entity.SysRole;
 import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.core.redis.RedisCache;
@@ -59,6 +66,21 @@ public class OptionAccessServiceImpl implements IOptionAccessService
 
     @Autowired
     private OptionAccessPolicyMapper accessPolicyMapper;
+
+    @Autowired
+    private ISysConfigService configService;
+
+    @Autowired
+    private IOptionCloseSnapshotService closeSnapshotService;
+
+    /** 策略进程内缓存时长 */
+    private static final long POLICY_CACHE_MILLIS = 60_000L;
+
+    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
+
+    private volatile List<OptionAccessPolicy> policyCache;
+
+    private volatile long policyCacheAt;
 
     @Override
     public OptionReleaseWindow resolveReleaseWindow(ZonedDateTime at)
@@ -288,5 +310,183 @@ public class OptionAccessServiceImpl implements IOptionAccessService
     {
         return time == null ? null
                 : time.toInstant().atZone(MEMBER_ZONE).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    }
+
+    @Override
+    public boolean isEnabled()
+    {
+        return "true".equalsIgnoreCase(StringUtils.trim(configService.selectConfigByKey(OptionAccessConstants.CONFIG_ENABLED)));
+    }
+
+    @Override
+    public boolean isDelayedFallbackRealtime()
+    {
+        return OptionDataView.REALTIME.getCode().equalsIgnoreCase(
+                StringUtils.trim(configService.selectConfigByKey(OptionAccessConstants.CONFIG_DELAYED_FALLBACK)));
+    }
+
+    @Override
+    public OptionAccessPolicy matchPolicy(String path)
+    {
+        if (StringUtils.isEmpty(path))
+        {
+            return null;
+        }
+        for (OptionAccessPolicy policy : enabledPolicies())
+        {
+            for (String pattern : StringUtils.split(StringUtils.defaultString(policy.getPathPattern()), ","))
+            {
+                if (StringUtils.isNotBlank(pattern) && PATH_MATCHER.match(pattern.trim(), path))
+                {
+                    return policy;
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public OptionAccessContext buildContext(Long userId, String path)
+    {
+        Date now = new Date();
+        OptionAccessIdentity identity = selectAccessIdentity(userId);
+        OptionAccessLevel level = identity.levelAt(now);
+        OptionAccessPolicy policy = matchPolicy(path);
+        // 未登记的路径按身份默认视图：实时身份看实时，盘后版按盘后处理，避免新接口漏登记时泄露实时数据
+        OptionDataView view = resolveView(level, policy);
+
+        OptionAccessContext context = new OptionAccessContext();
+        context.setUserId(userId);
+        context.setLevel(level);
+        context.setView(view);
+        context.setResource(policy == null ? null : policy.getResourceCode());
+        context.setTrialEndsAt(iso(identity.getTrialEndTime()));
+        if (view == OptionDataView.DELAYED)
+        {
+            fillRelease(context);
+        }
+        return context;
+    }
+
+    /**
+     * 盘后视图：数据交易日、冻结ID、放出时间、是否 STALE 取当前放出记录；下次放出时间按日历计算
+     */
+    private void fillRelease(OptionAccessContext context)
+    {
+        OptionReleaseWindow window = resolveReleaseWindow(ZonedDateTime.now(OptionMarketCalendar.MARKET_ZONE));
+        context.setNextReleaseAt(window.getNextReleaseAt());
+        Map<String, Object> current = null;
+        try
+        {
+            current = closeSnapshotService.selectReleaseCurrent();
+        }
+        catch (Exception e)
+        {
+            log.warn("读取当前放出记录失败: {}", e.getMessage());
+        }
+        if (current == null || current.get("tradeDate") == null)
+        {
+            return;
+        }
+        String tradeDate = String.valueOf(current.get("tradeDate"));
+        context.setDataTradeDate(tradeDate);
+        context.setReleasedAt(current.get("releasedAt") == null ? null : String.valueOf(current.get("releasedAt")));
+        Object snapshotId = current.get("snapshotId");
+        context.setSnapshotId(snapshotId == null ? null : Long.valueOf(String.valueOf(snapshotId)));
+        try
+        {
+            context.setDataAsOf(marketCalendar.closeCutoff(LocalDate.parse(tradeDate))
+                    .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        }
+        catch (Exception e)
+        {
+            log.warn("计算数据截止时间失败 {}: {}", tradeDate, e.getMessage());
+        }
+        String resource = context.getResource();
+        if (resource != null)
+        {
+            String stale = StringUtils.defaultString(current.get("staleResources") == null ? null
+                    : String.valueOf(current.get("staleResources")));
+            context.setStale(Arrays.stream(stale.split(",")).map(String::trim).anyMatch(resource::equals));
+        }
+    }
+
+    @Override
+    public List<OptionAccessPolicy> selectPolicyList(OptionAccessPolicy policy)
+    {
+        return accessPolicyMapper.selectOptionAccessPolicyList(policy);
+    }
+
+    @Override
+    public OptionAccessPolicy selectPolicyById(Long policyId)
+    {
+        return accessPolicyMapper.selectOptionAccessPolicyById(policyId);
+    }
+
+    @Override
+    public int updatePolicy(OptionAccessPolicy policy)
+    {
+        if (policy.getPolicyId() == null || accessPolicyMapper.selectOptionAccessPolicyById(policy.getPolicyId()) == null)
+        {
+            throw new ServiceException("菜单策略不存在");
+        }
+        checkMode(policy.getRealtimeMode(), "实时身份视图", OptionDataView.REALTIME.getCode(), OptionDataView.DENY.getCode(),
+                OptionDataView.SELF.getCode());
+        checkMode(policy.getDelayedMode(), "盘后版视图", OptionAccessConstants.MODE_CLOSE_SNAPSHOT,
+                OptionDataView.REALTIME.getCode(), OptionDataView.DENY.getCode(), OptionDataView.SELF.getCode());
+        if (policy.getStatus() != null && !"0".equals(policy.getStatus()) && !"1".equals(policy.getStatus()))
+        {
+            throw new ServiceException("状态只能为 0（正常）或 1（停用）");
+        }
+        if (policy.getPathPattern() != null && StringUtils.isBlank(policy.getPathPattern()))
+        {
+            throw new ServiceException("接口路径不能为空");
+        }
+        // 菜单编码是冻结数据的归属，不允许修改
+        policy.setResourceCode(null);
+        policy.setUpdateBy(SecurityUtils.getUsername());
+        int rows = accessPolicyMapper.updateOptionAccessPolicy(policy);
+        clearPolicyCache();
+        return rows;
+    }
+
+    @Override
+    public void clearPolicyCache()
+    {
+        policyCache = null;
+        policyCacheAt = 0L;
+    }
+
+    private static void checkMode(String mode, String name, String... allowed)
+    {
+        if (mode == null)
+        {
+            return;
+        }
+        for (String item : allowed)
+        {
+            if (item.equals(mode))
+            {
+                return;
+            }
+        }
+        throw new ServiceException(name + "只能为 " + String.join(" / ", allowed));
+    }
+
+    private List<OptionAccessPolicy> enabledPolicies()
+    {
+        List<OptionAccessPolicy> cached = policyCache;
+        long now = System.currentTimeMillis();
+        if (cached != null && now - policyCacheAt < POLICY_CACHE_MILLIS)
+        {
+            return cached;
+        }
+        OptionAccessPolicy query = new OptionAccessPolicy();
+        query.setStatus("0");
+        List<OptionAccessPolicy> list = new ArrayList<>(accessPolicyMapper.selectOptionAccessPolicyList(query));
+        list.sort(Comparator.comparing(p -> p.getOrderNum() == null ? Integer.MAX_VALUE : p.getOrderNum()));
+        policyCache = List.copyOf(list);
+        policyCacheAt = now;
+        return policyCache;
     }
 }

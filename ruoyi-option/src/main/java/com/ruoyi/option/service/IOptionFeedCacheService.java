@@ -33,6 +33,15 @@ public interface IOptionFeedCacheService
     public FeedBody get(String group);
 
     /**
+     * 会员读取 feed 分组（按当前请求的数据视图）：
+     * 实时视图同 get；盘后视图只读 option:delayed:feed:*，缺失时从冻结表回填，仍没有时返回空结构（不回落实时、不从多表拼接）
+     * 
+     * @param group 分组
+     * @return 内容
+     */
+    public FeedBody getView(String group);
+
+    /**
      * 分组内容
      */
     public record FeedBody(String body, String etag, Long syncId, String generatedAt)

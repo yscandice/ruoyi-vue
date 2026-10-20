@@ -773,6 +773,12 @@ public class OptionCloseSnapshotServiceImpl implements IOptionCloseSnapshotServi
     /**
      * 当前放出记录：优先 Redis，丢失时取库里 released_at 最新的 RELEASED 记录
      */
+    @Override
+    public Map<String, Object> selectReleaseCurrent()
+    {
+        return currentRelease();
+    }
+
     private Map<String, Object> currentRelease()
     {
         Map<String, Object> current = readJson(OptionAccessConstants.RELEASE_CURRENT_KEY);

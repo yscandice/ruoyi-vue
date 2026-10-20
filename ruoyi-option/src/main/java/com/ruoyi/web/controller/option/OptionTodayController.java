@@ -75,7 +75,7 @@ public class OptionTodayController extends BaseController
     @GetMapping("/feed")
     public void feed(HttpServletRequest request, HttpServletResponse response) throws Exception
     {
-        OptionFeedWriter.write(feedCacheService.get(OptionFeedConstants.GROUP_FULL), request, response);
+        OptionFeedWriter.write(feedCacheService.getView(OptionFeedConstants.GROUP_FULL), request, response);
     }
 
     @GetMapping("/seller-guide")
@@ -161,7 +161,7 @@ public class OptionTodayController extends BaseController
     private void read(String resource, String date, HttpServletRequest request, HttpServletResponse response)
             throws Exception
     {
-        OptionResourceController.write(resourceService.get(resource, date), request, response);
+        OptionResourceController.write(resourceService.getView(resource, date), request, response);
     }
 
     /**

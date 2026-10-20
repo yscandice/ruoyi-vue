@@ -42,6 +42,16 @@ public interface IOptionResourceService
     public FeedBody get(String resource, String date);
 
     /**
+     * 会员读取接口数据（按当前请求的数据视图）：
+     * 实时视图同 get；盘后视图只读 option:delayed:res:*，缺失时从冻结表回填，仍没有时返回空结构（不回落实时、不从版本表回填）
+     * 
+     * @param resource 接口
+     * @param date 业务日期
+     * @return 内容
+     */
+    public FeedBody getView(String resource, String date);
+
+    /**
      * 管理员手动导入一份接口数据（走同一套存表 + Redis 流程）
      * 
      * @param resource 接口名

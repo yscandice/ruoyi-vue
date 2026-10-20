@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 import com.ruoyi.option.service.IOptionFeedCacheService.FeedBody;
+import com.ruoyi.option.utils.OptionAccessContext;
 
 /**
  * 以与 OSM 相同的方式输出 feed 原始 JSON（ETag / 304 / X-Feed-Generated-At）
@@ -14,6 +15,9 @@ import com.ruoyi.option.service.IOptionFeedCacheService.FeedBody;
  */
 public class OptionFeedWriter
 {
+    /** 响应头：盘后视图暂无数据，返回空结构 */
+    public static final String HEADER_EMPTY = "X-Option-Data-Empty";
+
     private OptionFeedWriter()
     {
     }
@@ -35,6 +39,12 @@ public class OptionFeedWriter
             response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
             response.getWriter().write("{\"error\":\"feed 暂无数据，请先登录 OSM 并执行同步\"}");
             return;
+        }
+        OptionAccessContext context = OptionAccessContext.get();
+        if (context != null && context.isEmpty())
+        {
+            // 盘后视图暂无数据，返回的是空结构（delayedFallback = EMPTY）
+            response.setHeader(HEADER_EMPTY, "true");
         }
         response.setHeader("ETag", feed.etag());
         if (feed.syncId() != null)
