@@ -1,6 +1,7 @@
 package com.ruoyi.option.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import com.ruoyi.option.domain.OptionMemberUpdateSeen;
 
 /**
@@ -57,4 +58,13 @@ public interface OptionMemberUpdateSeenMapper
      * @return 结果
      */
     public int deleteOptionMemberUpdateSeenByIds(Long[] userIds);
+
+    /**
+     * 标记已读：没有记录则新建；已有记录只增不减（seenSeq 不大于库里的值时不改动）
+     * 
+     * @param userId 用户ID
+     * @param seenSeq 已读序号
+     * @return 影响行数
+     */
+    public int upsertSeen(@Param("userId") Long userId, @Param("seenSeq") Integer seenSeq);
 }

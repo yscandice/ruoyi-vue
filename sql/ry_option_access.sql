@@ -293,13 +293,13 @@ from dual where not exists (select 1 from sys_job where invoke_target = 'optionA
 
 -- ----------------------------
 -- 15、菜单数据权限策略初始数据（文档 3.6）：冻结任务按 delayed_mode = CLOSE_SNAPSHOT 的菜单及其 redis_prefix 冻结；
---     拦截器按 path_pattern 匹配菜单（步骤 6 接入），order_num 小的先匹配（today 的 /api/member/updates 是阅读进度，需排在 update 菜单之前）
+--     拦截器按 path_pattern 匹配菜单（步骤 6 接入），order_num 小的先匹配（settings 的 /api/member/updates、/updates/seen 是本人阅读进度，需排在 update 菜单之前）
 -- ----------------------------
 insert into option_access_policy (resource_code, resource_name, path_pattern, redis_prefix, realtime_mode, delayed_mode, order_num, status, create_by, create_time, create_time_utc, remark)
 select t.resource_code, t.resource_name, t.path_pattern, t.redis_prefix, t.realtime_mode, t.delayed_mode, t.order_num, '0', 'admin', date_add(utc_timestamp(), interval 8 hour), utc_timestamp(), t.remark
 from (
   select 'today' resource_code, '今日' resource_name,
-         '/api/member/feed,/api/member/today/**,/api/member/premarket,/api/member/seller-guide,/api/member/entitlement,/api/member/decisions,/api/member/management-choices,/api/member/updates,/api/member/support' path_pattern,
+         '/api/member/feed,/api/member/today/**,/api/member/premarket,/api/member/seller-guide,/api/member/entitlement,/api/member/decisions,/api/member/management-choices,/api/member/support' path_pattern,
          'option:feed:,option:res:' redis_prefix, 'REALTIME' realtime_mode, 'CLOSE_SNAPSHOT' delayed_mode, 1 order_num, '信号核心；feed 只冻结当前批次' remark
   union all select 'info', '信息', '/api/member/info-feed,/api/member/info/**', 'option:info:', 'REALTIME', 'CLOSE_SNAPSHOT', 2, '含盘前、财报、札记；不冻结同步账号推荐码'
   union all select 'conduct', '进行', '/api/member/conduct,/api/member/conduct/**', 'option:conduct:', 'REALTIME', 'CLOSE_SNAPSHOT', 3, null
@@ -307,8 +307,8 @@ from (
   union all select 'settlement', '结算', '/api/member/settlement,/api/member/settlement/**', 'option:settlement:', 'REALTIME', 'CLOSE_SNAPSHOT', 5, null
   union all select 'record', '战绩', '/api/member/record,/api/member/record/**', 'option:record:', 'REALTIME', 'CLOSE_SNAPSHOT', 6, null
   union all select 'academy', '学堂', '/api/member/academy,/api/member/academy/**', 'option:academy:', 'REALTIME', 'REALTIME', 7, '教学内容不怕延迟'
-  union all select 'update', '更新', '/api/member/updates/**', 'option:update:', 'REALTIME', 'REALTIME', 8, '产品更新内容'
-  union all select 'settings', '设置', '/api/member/settings/**,/api/member/profile,/api/member/notifications,/api/member/password,/api/member/avatar,/api/member/referrals,/api/member/push,/api/member/api-keys,/api/member/advisory-contact', null, 'SELF', 'SELF', 9, '本人数据，不走同步'
+  union all select 'update', '更新', '/api/member/updates/**', 'option:update:', 'REALTIME', 'REALTIME', 9, '产品更新内容'
+  union all select 'settings', '设置', '/api/member/settings,/api/member/settings/**,/api/member/profile,/api/member/notifications,/api/member/notifications/**,/api/member/updates,/api/member/updates/seen,/api/member/password,/api/member/avatar,/api/member/referrals,/api/member/push,/api/member/api-keys,/api/member/advisory-contact', null, 'SELF', 'SELF', 8, '本人数据，不走同步'
   union all select 'manage', '管理接口', '/api/member/login,/api/member/today/snapshot', null, 'REALTIME', 'DENY', 0, '同步账号登录与手动导入，接口本身限管理员；盘后版直接拒绝'
 ) t
 where not exists (select 1 from option_access_policy p where p.resource_code = t.resource_code);

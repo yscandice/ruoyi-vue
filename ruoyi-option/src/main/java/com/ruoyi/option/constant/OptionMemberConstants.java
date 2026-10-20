@@ -75,4 +75,34 @@ public class OptionMemberConstants
     public static final String RESULT_REJECTED = "REJECTED";
 
     public static final String RESULT_FAILED = "FAILED";
+
+    /** 参数：通知偏好默认值（JSON，技术文档 4.2） */
+    public static final String CONFIG_NOTIFY_DEFAULTS = "option.settings.notifyDefaults";
+
+    /** 设置缓存（资料扩展、通知偏好、阅读进度），30 分钟，保存时删除 */
+    public static final String SETTINGS_KEY = "option:member:settings:";
+
+    public static final int SETTINGS_EXPIRE_MINUTES = 30;
+
+    /** 通知开关（字段名沿用 OSM notifications.prefs，顺序即返回顺序） */
+    public static final String[] NOTIFY_KEYS = { "new_signal", "protection_window", "take_profit_window", "settlement",
+            "weekly_scorecard", "product_update", "silent_reminder", "management_stop", "manage_adopted_only" };
+
+    /** 默认关闭的通知开关（参数缺失或格式错误时使用） */
+    public static final String[] NOTIFY_DEFAULT_OFF = { "silent_reminder", "management_stop", "manage_adopted_only" };
+
+    /** 策略偏好白名单 */
+    public static final String[] STRATEGY_KEYS = { "seller", "midterm", "buyer" };
+
+    /** 默认开启的策略偏好 */
+    public static final String[] STRATEGY_DEFAULT_ON = { "seller", "midterm" };
+
+    /** 关注标的：大写字母、数字、点，1–10 位 */
+    public static final String WATCH_SYMBOL_PATTERN = "^[A-Z0-9.]{1,10}$";
+
+    /** 关注标的最多个数 */
+    public static final int WATCH_SYMBOL_MAX = 50;
+
+    /** 显示名称长度（sys_user.nick_name） */
+    public static final int DISPLAY_NAME_MAX_LENGTH = 30;
 }

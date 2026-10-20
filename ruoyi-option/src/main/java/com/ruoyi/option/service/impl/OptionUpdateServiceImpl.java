@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.option.client.OsmClient;
 import com.ruoyi.option.domain.OptionUpdateItem;
@@ -29,6 +30,7 @@ import com.ruoyi.option.mapper.OptionUpdateMapper;
 import com.ruoyi.option.service.IOptionFeedCacheService.FeedBody;
 import com.ruoyi.option.service.IOptionResourceService;
 import com.ruoyi.option.service.IOptionSessionService;
+import com.ruoyi.option.service.IOptionMemberSettingsService;
 import com.ruoyi.option.service.IOptionUpdateService;
 import com.ruoyi.option.utils.OptionHtml;
 import com.ruoyi.option.utils.OptionHtml.Node;
@@ -85,6 +87,9 @@ public class OptionUpdateServiceImpl implements IOptionUpdateService
     private static final String FAILED = "FAILED";
 
     private final ReentrantLock rebuildLock = new ReentrantLock();
+
+    @Autowired
+    private IOptionMemberSettingsService settingsService;
 
     @Autowired
     private OsmClient osmClient;
@@ -445,7 +450,8 @@ public class OptionUpdateServiceImpl implements IOptionUpdateService
             }
         }
         ObjectNode summary = (ObjectNode) OptionJson.read(body);
-        summary.set("progress", readStatus());
+        // 阅读进度按用户记录（不再返回同步账号的 seenSeq）
+        summary.set("progress", OptionJson.MAPPER.valueToTree(settingsService.selectUpdateProgress(SecurityUtils.getUserId())));
         summary.set("status", OptionJson.MAPPER.valueToTree(redisCache.getCacheMap(STATUS_KEY)));
         String text = OptionJson.write(summary);
         return new FeedBody(text, OptionJson.etag(text), null, null);

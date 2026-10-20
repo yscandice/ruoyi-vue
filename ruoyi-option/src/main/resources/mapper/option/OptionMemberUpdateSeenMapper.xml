@@ -56,6 +56,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where user_id = #{userId}
     </update>
 
+    <!-- seen_at 先于 seen_seq 赋值：MySQL 按从左到右计算，此时 seen_seq 仍是旧值 -->
+    <insert id="upsertSeen">
+        insert into option_member_update_seen (user_id, seen_seq, seen_at, seen_at_utc)
+        values (#{userId}, #{seenSeq}, date_add(utc_timestamp(), interval 8 hour), utc_timestamp())
+        on duplicate key update
+            seen_at = if(values(seen_seq) &gt; seen_seq, values(seen_at), seen_at),
+            seen_at_utc = if(values(seen_seq) &gt; seen_seq, values(seen_at_utc), seen_at_utc),
+            seen_seq = greatest(seen_seq, values(seen_seq))
+    </insert>
+
     <delete id="deleteOptionMemberUpdateSeenById" parameterType="Long">
         delete from option_member_update_seen where user_id = #{userId}
     </delete>

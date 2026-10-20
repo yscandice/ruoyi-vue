@@ -109,12 +109,6 @@ public class OptionTodayController extends BaseController
         read("premarket", d, request, response);
     }
 
-    @GetMapping("/updates")
-    public void updates(HttpServletRequest request, HttpServletResponse response) throws Exception
-    {
-        read("updates", null, request, response);
-    }
-
     @GetMapping("/support")
     public void support(HttpServletRequest request, HttpServletResponse response) throws Exception
     {
