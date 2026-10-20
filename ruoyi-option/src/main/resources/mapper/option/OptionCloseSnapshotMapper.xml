@@ -54,7 +54,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where snapshot_id = #{snapshotId}
     </select>
 
-    <select id="selectOptionCloseSnapshotByTradeDate" parameterType="java.util.Date" resultMap="OptionCloseSnapshotResult">
+    <select id="selectOptionCloseSnapshotByTradeDate" parameterType="java.time.LocalDate" resultMap="OptionCloseSnapshotResult">
         <include refid="selectOptionCloseSnapshotVo"/>
         where trade_date = #{tradeDate}
     </select>

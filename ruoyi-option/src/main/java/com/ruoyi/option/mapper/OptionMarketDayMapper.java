@@ -1,6 +1,6 @@
 package com.ruoyi.option.mapper;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import com.ruoyi.option.domain.OptionMarketDay;
@@ -18,7 +18,7 @@ public interface OptionMarketDayMapper
      * @param tradeDate 主键
      * @return 美股交易日历（例外日）
      */
-    public OptionMarketDay selectOptionMarketDayById(Date tradeDate);
+    public OptionMarketDay selectOptionMarketDayById(LocalDate tradeDate);
 
     /**
      * 查询美股交易日历（例外日）列表
@@ -35,7 +35,7 @@ public interface OptionMarketDayMapper
      * @param endDate 结束日期（含）
      * @return 例外日集合
      */
-    public List<OptionMarketDay> selectOptionMarketDayByRange(@Param("beginDate") Date beginDate, @Param("endDate") Date endDate);
+    public List<OptionMarketDay> selectOptionMarketDayByRange(@Param("beginDate") LocalDate beginDate, @Param("endDate") LocalDate endDate);
 
     /**
      * 新增美股交易日历（例外日）
@@ -59,7 +59,7 @@ public interface OptionMarketDayMapper
      * @param tradeDate 主键
      * @return 结果
      */
-    public int deleteOptionMarketDayById(Date tradeDate);
+    public int deleteOptionMarketDayById(LocalDate tradeDate);
 
     /**
      * 批量删除美股交易日历（例外日）
@@ -67,5 +67,5 @@ public interface OptionMarketDayMapper
      * @param tradeDates 需要删除的主键集合
      * @return 结果
      */
-    public int deleteOptionMarketDayByIds(Date[] tradeDates);
+    public int deleteOptionMarketDayByIds(LocalDate[] tradeDates);
 }

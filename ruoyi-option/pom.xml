@@ -12,5 +12,7 @@
         <dependency><groupId>org.mybatis.spring.boot</groupId><artifactId>mybatis-spring-boot-starter</artifactId></dependency>
         <dependency><groupId>com.ruoyi</groupId><artifactId>ruoyi-common</artifactId></dependency>
         <dependency><groupId>com.ruoyi</groupId><artifactId>ruoyi-system</artifactId></dependency>
+        <!-- 单元测试（交易日历、放出窗口计算），版本跟随 Spring Boot -->
+        <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
     </dependencies>
 </project>

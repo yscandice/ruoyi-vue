@@ -1,5 +1,6 @@
 package com.ruoyi.option.domain;
 
+import java.time.LocalDate;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.core.domain.BaseEntity;
@@ -20,7 +21,7 @@ public class OptionCloseSnapshot extends BaseEntity
 
     /** 交易日（美东） */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private Date tradeDate;
+    private LocalDate tradeDate;
 
     /** 收盘冻结点（美东） */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -86,12 +87,12 @@ public class OptionCloseSnapshot extends BaseEntity
         return snapshotId;
     }
 
-    public void setTradeDate(Date tradeDate)
+    public void setTradeDate(LocalDate tradeDate)
     {
         this.tradeDate = tradeDate;
     }
 
-    public Date getTradeDate()
+    public LocalDate getTradeDate()
     {
         return tradeDate;
     }

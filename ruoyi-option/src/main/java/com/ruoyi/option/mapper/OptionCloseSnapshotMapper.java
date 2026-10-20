@@ -1,6 +1,6 @@
 package com.ruoyi.option.mapper;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import com.ruoyi.option.domain.OptionCloseSnapshot;
@@ -34,7 +34,7 @@ public interface OptionCloseSnapshotMapper
      * @param tradeDate 交易日（美东）
      * @return 冻结记录
      */
-    public OptionCloseSnapshot selectOptionCloseSnapshotByTradeDate(Date tradeDate);
+    public OptionCloseSnapshot selectOptionCloseSnapshotByTradeDate(LocalDate tradeDate);
 
     /**
      * 查询当前已放出（最新一条 RELEASED）的冻结记录，用于 Redis 丢失后恢复
@@ -49,7 +49,7 @@ public interface OptionCloseSnapshotMapper
      * @param tradeDate 交易日（不含）
      * @return 冻结记录
      */
-    public OptionCloseSnapshot selectOptionCloseSnapshotBefore(@Param("tradeDate") Date tradeDate);
+    public OptionCloseSnapshot selectOptionCloseSnapshotBefore(@Param("tradeDate") LocalDate tradeDate);
 
     /**
      * 新增盘后视图冻结记录

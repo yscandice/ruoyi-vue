@@ -1,5 +1,6 @@
 package com.ruoyi.option.domain;
 
+import java.time.LocalDate;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.core.domain.BaseEntity;
@@ -17,7 +18,7 @@ public class OptionMarketDay extends BaseEntity
 
     /** 日期（美东） */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private Date tradeDate;
+    private LocalDate tradeDate;
 
     /** 是否交易日 1是 0否 */
     private String trading;
@@ -34,12 +35,12 @@ public class OptionMarketDay extends BaseEntity
     /** 节假日名称 */
     private String holidayName;
 
-    public void setTradeDate(Date tradeDate)
+    public void setTradeDate(LocalDate tradeDate)
     {
         this.tradeDate = tradeDate;
     }
 
-    public Date getTradeDate()
+    public LocalDate getTradeDate()
     {
         return tradeDate;
     }

@@ -6,9 +6,12 @@
 --       option_member_update_seen / option_member_register_log
 --   参数：option.access.* / option.member.* / option.settings.*（sys_config）
 --   角色：option_member（会员）、option_staff（内部人员，看实时数据）；部门：会员
--- 策略初始数据（3.6）在步骤 6、交易日历初始数据在步骤 3 补充
+-- 交易日历初始数据（步骤 3）见第 13 部分；策略初始数据（3.6）在步骤 6 补充
 -- 增量脚本，可重复执行：create table if not exists + insert ... where not exists
 -- ----------------------------------------------------------------------------
+
+-- 按 utf8mb4 导入，避免客户端默认字符集（如 latin1）导致中文乱码
+set names utf8mb4;
 
 -- 1、会员权限档案 option_member_access（文档 5.1）
 create table if not exists option_member_access (
@@ -225,3 +228,50 @@ from sys_dept d
 where d.parent_id = 0 and d.del_flag = '0'
   and not exists (select 1 from sys_dept where dept_name = '会员' and del_flag = '0')
 order by d.dept_id limit 1;
+
+-- 13、交易日历初始数据（文档 5.3、13.2 步骤 3）：2025–2027 年 NYSE 休市日与提前收盘日（13:00 收盘）
+--     只登记例外日；未登记的周一至周五按 09:30–16:00 交易。每年 12 月在后台「交易日历」维护下一年。
+--     来源：NYSE 公布的 Holidays & Trading Hours（2027 年为预告日程，以交易所最终公告为准）
+insert into option_market_calendar (trade_date, trading, open_time, close_time, early_close, holiday_name, create_by, create_time, remark)
+select t.trade_date, t.trading, t.open_time, t.close_time, t.early_close, t.holiday_name, 'admin', sysdate(), 'NYSE'
+from (
+  select null trade_date, null trading, null open_time, null close_time, null early_close, null holiday_name from dual where 1 = 0
+  union all select '2025-01-01', '0', null, null, '0', '元旦'
+  union all select '2025-01-09', '0', null, null, '0', '卡特总统国葬日（全国哀悼日）'
+  union all select '2025-01-20', '0', null, null, '0', '马丁·路德·金纪念日'
+  union all select '2025-02-17', '0', null, null, '0', '总统日'
+  union all select '2025-04-18', '0', null, null, '0', '耶稣受难日'
+  union all select '2025-05-26', '0', null, null, '0', '阵亡将士纪念日'
+  union all select '2025-06-19', '0', null, null, '0', '六月节'
+  union all select '2025-07-03', '1', '09:30:00', '13:00:00', '1', '独立日前一天'
+  union all select '2025-07-04', '0', null, null, '0', '独立日'
+  union all select '2025-09-01', '0', null, null, '0', '劳动节'
+  union all select '2025-11-27', '0', null, null, '0', '感恩节'
+  union all select '2025-11-28', '1', '09:30:00', '13:00:00', '1', '感恩节次日'
+  union all select '2025-12-24', '1', '09:30:00', '13:00:00', '1', '平安夜'
+  union all select '2025-12-25', '0', null, null, '0', '圣诞节'
+  union all select '2026-01-01', '0', null, null, '0', '元旦'
+  union all select '2026-01-19', '0', null, null, '0', '马丁·路德·金纪念日'
+  union all select '2026-02-16', '0', null, null, '0', '总统日'
+  union all select '2026-04-03', '0', null, null, '0', '耶稣受难日'
+  union all select '2026-05-25', '0', null, null, '0', '阵亡将士纪念日'
+  union all select '2026-06-19', '0', null, null, '0', '六月节'
+  union all select '2026-07-03', '0', null, null, '0', '独立日（补休）'
+  union all select '2026-09-07', '0', null, null, '0', '劳动节'
+  union all select '2026-11-26', '0', null, null, '0', '感恩节'
+  union all select '2026-11-27', '1', '09:30:00', '13:00:00', '1', '感恩节次日'
+  union all select '2026-12-24', '1', '09:30:00', '13:00:00', '1', '平安夜'
+  union all select '2026-12-25', '0', null, null, '0', '圣诞节'
+  union all select '2027-01-01', '0', null, null, '0', '元旦'
+  union all select '2027-01-18', '0', null, null, '0', '马丁·路德·金纪念日'
+  union all select '2027-02-15', '0', null, null, '0', '总统日'
+  union all select '2027-03-26', '0', null, null, '0', '耶稣受难日'
+  union all select '2027-05-31', '0', null, null, '0', '阵亡将士纪念日'
+  union all select '2027-06-18', '0', null, null, '0', '六月节（补休）'
+  union all select '2027-07-05', '0', null, null, '0', '独立日（补休）'
+  union all select '2027-09-06', '0', null, null, '0', '劳动节'
+  union all select '2027-11-25', '0', null, null, '0', '感恩节'
+  union all select '2027-11-26', '1', '09:30:00', '13:00:00', '1', '感恩节次日'
+  union all select '2027-12-24', '0', null, null, '0', '圣诞节（补休）'
+) t
+where not exists (select 1 from option_market_calendar c where c.trade_date = t.trade_date);

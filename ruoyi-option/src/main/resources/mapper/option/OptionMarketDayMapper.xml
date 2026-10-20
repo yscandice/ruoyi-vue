@@ -35,7 +35,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by trade_date
     </select>
 
-    <select id="selectOptionMarketDayById" parameterType="java.util.Date" resultMap="OptionMarketDayResult">
+    <select id="selectOptionMarketDayById" parameterType="java.time.LocalDate" resultMap="OptionMarketDayResult">
         <include refid="selectOptionMarketDayVo"/>
         where trade_date = #{tradeDate}
     </select>
@@ -89,7 +89,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where trade_date = #{tradeDate}
     </update>
 
-    <delete id="deleteOptionMarketDayById" parameterType="java.util.Date">
+    <delete id="deleteOptionMarketDayById" parameterType="java.time.LocalDate">
         delete from option_market_calendar where trade_date = #{tradeDate}
     </delete>
 
