@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.option.mapper.OptionMemberUpdateSeenMapper">
+
+    <resultMap type="OptionMemberUpdateSeen" id="OptionMemberUpdateSeenResult">
+        <id     property="userId"                column="user_id"               />
+        <result property="seenSeq"               column="seen_seq"              />
+        <result property="seenAt"                column="seen_at"               />
+        <result property="seenAtUtc"             column="seen_at_utc"           />
+    </resultMap>
+
+    <sql id="selectOptionMemberUpdateSeenVo">
+        select user_id, seen_seq, seen_at, seen_at_utc
+        from option_member_update_seen
+    </sql>
+
+    <select id="selectOptionMemberUpdateSeenList" parameterType="OptionMemberUpdateSeen" resultMap="OptionMemberUpdateSeenResult">
+        <include refid="selectOptionMemberUpdateSeenVo"/>
+        <where>
+            <if test="userId != null">and user_id = #{userId}</if>
+            <if test="seenSeq != null">and seen_seq = #{seenSeq}</if>
+        </where>
+        order by user_id
+    </select>
+
+    <select id="selectOptionMemberUpdateSeenById" parameterType="Long" resultMap="OptionMemberUpdateSeenResult">
+        <include refid="selectOptionMemberUpdateSeenVo"/>
+        where user_id = #{userId}
+    </select>
+
+    <insert id="insertOptionMemberUpdateSeen" parameterType="OptionMemberUpdateSeen">
+        insert into option_member_update_seen
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userId != null">user_id,</if>
+            <if test="seenSeq != null">seen_seq,</if>
+            <if test="seenAt != null">seen_at,</if>
+            <if test="seenAtUtc != null">seen_at_utc,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userId != null">#{userId},</if>
+            <if test="seenSeq != null">#{seenSeq},</if>
+            <if test="seenAt != null">#{seenAt},</if>
+            <if test="seenAtUtc != null">#{seenAtUtc},</if>
+        </trim>
+    </insert>
+
+    <update id="updateOptionMemberUpdateSeen" parameterType="OptionMemberUpdateSeen">
+        update option_member_update_seen
+        <set>
+            <if test="seenSeq != null">seen_seq = #{seenSeq},</if>
+            <if test="seenAt != null">seen_at = #{seenAt},</if>
+            <if test="seenAtUtc != null">seen_at_utc = #{seenAtUtc},</if>
+        </set>
+        where user_id = #{userId}
+    </update>
+
+    <delete id="deleteOptionMemberUpdateSeenById" parameterType="Long">
+        delete from option_member_update_seen where user_id = #{userId}
+    </delete>
+
+    <delete id="deleteOptionMemberUpdateSeenByIds">
+        delete from option_member_update_seen where user_id in
+        <foreach item="userId" collection="array" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </delete>
+
+</mapper>

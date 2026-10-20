@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.option.mapper.OptionAccessPolicyMapper">
+
+    <resultMap type="OptionAccessPolicy" id="OptionAccessPolicyResult">
+        <id     property="policyId"              column="policy_id"             />
+        <result property="resourceCode"          column="resource_code"         />
+        <result property="resourceName"          column="resource_name"         />
+        <result property="pathPattern"           column="path_pattern"          />
+        <result property="redisPrefix"           column="redis_prefix"          />
+        <result property="realtimeMode"          column="realtime_mode"         />
+        <result property="delayedMode"           column="delayed_mode"          />
+        <result property="orderNum"              column="order_num"             />
+        <result property="status"                column="status"                />
+        <result property="createBy"              column="create_by"             />
+        <result property="createTime"            column="create_time"           />
+        <result property="createTimeUtc"         column="create_time_utc"       />
+        <result property="updateBy"              column="update_by"             />
+        <result property="updateTime"            column="update_time"           />
+        <result property="updateTimeUtc"         column="update_time_utc"       />
+        <result property="remark"                column="remark"                />
+    </resultMap>
+
+    <sql id="selectOptionAccessPolicyVo">
+        select policy_id, resource_code, resource_name, path_pattern, redis_prefix, realtime_mode, delayed_mode, order_num, status, create_by, create_time, create_time_utc, update_by, update_time, update_time_utc, remark
+        from option_access_policy
+    </sql>
+
+    <select id="selectOptionAccessPolicyList" parameterType="OptionAccessPolicy" resultMap="OptionAccessPolicyResult">
+        <include refid="selectOptionAccessPolicyVo"/>
+        <where>
+            <if test="policyId != null">and policy_id = #{policyId}</if>
+            <if test="resourceCode != null and resourceCode != ''">and resource_code = #{resourceCode}</if>
+            <if test="resourceName != null and resourceName != ''">and resource_name = #{resourceName}</if>
+            <if test="realtimeMode != null and realtimeMode != ''">and realtime_mode = #{realtimeMode}</if>
+            <if test="delayedMode != null and delayedMode != ''">and delayed_mode = #{delayedMode}</if>
+            <if test="orderNum != null">and order_num = #{orderNum}</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+        </where>
+        order by order_num, policy_id
+    </select>
+
+    <select id="selectOptionAccessPolicyById" parameterType="Long" resultMap="OptionAccessPolicyResult">
+        <include refid="selectOptionAccessPolicyVo"/>
+        where policy_id = #{policyId}
+    </select>
+
+    <select id="selectOptionAccessPolicyByCode" parameterType="String" resultMap="OptionAccessPolicyResult">
+        <include refid="selectOptionAccessPolicyVo"/>
+        where resource_code = #{resourceCode}
+    </select>
+
+    <insert id="insertOptionAccessPolicy" parameterType="OptionAccessPolicy" useGeneratedKeys="true" keyProperty="policyId">
+        insert into option_access_policy
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="resourceCode != null and resourceCode != ''">resource_code,</if>
+            <if test="resourceName != null and resourceName != ''">resource_name,</if>
+            <if test="pathPattern != null and pathPattern != ''">path_pattern,</if>
+            <if test="redisPrefix != null and redisPrefix != ''">redis_prefix,</if>
+            <if test="realtimeMode != null and realtimeMode != ''">realtime_mode,</if>
+            <if test="delayedMode != null and delayedMode != ''">delayed_mode,</if>
+            <if test="orderNum != null">order_num,</if>
+            <if test="status != null and status != ''">status,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            create_time,
+            create_time_utc,
+            <if test="updateBy != null and updateBy != ''">update_by,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="resourceCode != null and resourceCode != ''">#{resourceCode},</if>
+            <if test="resourceName != null and resourceName != ''">#{resourceName},</if>
+            <if test="pathPattern != null and pathPattern != ''">#{pathPattern},</if>
+            <if test="redisPrefix != null and redisPrefix != ''">#{redisPrefix},</if>
+            <if test="realtimeMode != null and realtimeMode != ''">#{realtimeMode},</if>
+            <if test="delayedMode != null and delayedMode != ''">#{delayedMode},</if>
+            <if test="orderNum != null">#{orderNum},</if>
+            <if test="status != null and status != ''">#{status},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            date_add(utc_timestamp(), interval 8 hour),
+            utc_timestamp(),
+            <if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateOptionAccessPolicy" parameterType="OptionAccessPolicy">
+        update option_access_policy
+        <set>
+            <if test="resourceCode != null">resource_code = #{resourceCode},</if>
+            <if test="resourceName != null">resource_name = #{resourceName},</if>
+            <if test="pathPattern != null">path_pattern = #{pathPattern},</if>
+            <if test="redisPrefix != null">redis_prefix = #{redisPrefix},</if>
+            <if test="realtimeMode != null">realtime_mode = #{realtimeMode},</if>
+            <if test="delayedMode != null">delayed_mode = #{delayedMode},</if>
+            <if test="orderNum != null">order_num = #{orderNum},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = date_add(utc_timestamp(), interval 8 hour),
+            update_time_utc = utc_timestamp(),
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        where policy_id = #{policyId}
+    </update>
+
+    <delete id="deleteOptionAccessPolicyById" parameterType="Long">
+        delete from option_access_policy where policy_id = #{policyId}
+    </delete>
+
+    <delete id="deleteOptionAccessPolicyByIds">
+        delete from option_access_policy where policy_id in
+        <foreach item="policyId" collection="array" open="(" separator="," close=")">
+            #{policyId}
+        </foreach>
+    </delete>
+
+</mapper>

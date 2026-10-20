@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.option.mapper.OptionCloseSnapshotDataMapper">
+
+    <resultMap type="OptionCloseSnapshotData" id="OptionCloseSnapshotDataResult">
+        <id     property="dataId"                column="data_id"               />
+        <result property="snapshotId"            column="snapshot_id"           />
+        <result property="resourceCode"          column="resource_code"         />
+        <result property="redisKey"              column="redis_key"             />
+        <result property="valueType"             column="value_type"            />
+        <result property="contentHash"           column="content_hash"          />
+        <result property="payload"               column="payload"               />
+        <result property="createTime"            column="create_time"           />
+    </resultMap>
+
+    <sql id="selectOptionCloseSnapshotDataVo">
+        select data_id, snapshot_id, resource_code, redis_key, value_type, content_hash, create_time
+        from option_close_snapshot_data
+    </sql>
+
+    <select id="selectOptionCloseSnapshotDataList" parameterType="OptionCloseSnapshotData" resultMap="OptionCloseSnapshotDataResult">
+        <include refid="selectOptionCloseSnapshotDataVo"/>
+        <where>
+            <if test="dataId != null">and data_id = #{dataId}</if>
+            <if test="snapshotId != null">and snapshot_id = #{snapshotId}</if>
+            <if test="resourceCode != null and resourceCode != ''">and resource_code = #{resourceCode}</if>
+            <if test="redisKey != null and redisKey != ''">and redis_key = #{redisKey}</if>
+            <if test="valueType != null and valueType != ''">and value_type = #{valueType}</if>
+        </where>
+        order by resource_code, redis_key
+    </select>
+
+    <select id="selectOptionCloseSnapshotDataById" parameterType="Long" resultMap="OptionCloseSnapshotDataResult">
+        <include refid="selectOptionCloseSnapshotDataVo"/>
+        where data_id = #{dataId}
+    </select>
+
+    <select id="selectOptionCloseSnapshotDataBySnapshotId" parameterType="Long" resultMap="OptionCloseSnapshotDataResult">
+        select data_id, snapshot_id, resource_code, redis_key, value_type, content_hash, payload, create_time
+        from option_close_snapshot_data
+        where snapshot_id = #{snapshotId}
+        order by data_id
+    </select>
+
+    <insert id="batchInsertOptionCloseSnapshotData">
+        insert into option_close_snapshot_data (snapshot_id, resource_code, redis_key, value_type, content_hash, payload, create_time)
+        values
+        <foreach item="item" collection="list" separator=",">
+            (#{item.snapshotId}, #{item.resourceCode}, #{item.redisKey}, #{item.valueType}, #{item.contentHash}, #{item.payload},
+            date_add(utc_timestamp(), interval 8 hour))
+        </foreach>
+    </insert>
+
+    <delete id="deleteOptionCloseSnapshotDataBySnapshotIds">
+        delete from option_close_snapshot_data where snapshot_id in
+        <foreach item="snapshotId" collection="array" open="(" separator="," close=")">
+            #{snapshotId}
+        </foreach>
+    </delete>
+
+    <insert id="insertOptionCloseSnapshotData" parameterType="OptionCloseSnapshotData" useGeneratedKeys="true" keyProperty="dataId">
+        insert into option_close_snapshot_data
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="resourceCode != null and resourceCode != ''">resource_code,</if>
+            <if test="redisKey != null and redisKey != ''">redis_key,</if>
+            <if test="valueType != null and valueType != ''">value_type,</if>
+            <if test="contentHash != null and contentHash != ''">content_hash,</if>
+            <if test="payload != null">payload,</if>
+            create_time,
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="resourceCode != null and resourceCode != ''">#{resourceCode},</if>
+            <if test="redisKey != null and redisKey != ''">#{redisKey},</if>
+            <if test="valueType != null and valueType != ''">#{valueType},</if>
+            <if test="contentHash != null and contentHash != ''">#{contentHash},</if>
+            <if test="payload != null">#{payload},</if>
+            date_add(utc_timestamp(), interval 8 hour),
+        </trim>
+    </insert>
+
+
+    <delete id="deleteOptionCloseSnapshotDataById" parameterType="Long">
+        delete from option_close_snapshot_data where data_id = #{dataId}
+    </delete>
+
+    <delete id="deleteOptionCloseSnapshotDataByIds">
+        delete from option_close_snapshot_data where data_id in
+        <foreach item="dataId" collection="array" open="(" separator="," close=")">
+            #{dataId}
+        </foreach>
+    </delete>
+
+</mapper>
