@@ -36,6 +36,7 @@ import com.ruoyi.option.service.IOptionFeedSyncService;
 import com.ruoyi.option.service.IOptionFollowService;
 import com.ruoyi.option.service.IOptionResourceService;
 import com.ruoyi.option.service.IOptionSessionService;
+import com.ruoyi.option.utils.OptionAccessContext;
 import com.ruoyi.option.utils.OptionJson;
 
 /**
@@ -83,6 +84,9 @@ public class OptionFollowServiceImpl implements IOptionFollowService
     private static final String EMPTY_EVENTS = "{\"latest\":[],\"events\":[]}";
 
     private final ReentrantLock rebuildLock = new ReentrantLock();
+
+    @Autowired
+    private OptionDelayedReader delayedReader;
 
     @Autowired
     private IOptionFeedSyncService feedSyncService;
@@ -555,16 +559,22 @@ public class OptionFollowServiceImpl implements IOptionFollowService
             return null;
         }
         ObjectNode summary = (ObjectNode) OptionJson.read(body);
-        summary.set("status", OptionJson.MAPPER.valueToTree(redisCache.getCacheMap(STATUS_KEY)));
+        // 盘后视图不带实时同步状态
+        summary.set("status", OptionJson.MAPPER.valueToTree(
+                OptionAccessContext.isDelayed() ? delayedReader.status() : redisCache.getCacheMap(STATUS_KEY)));
         String text = OptionJson.write(summary);
         return new FeedBody(text, OptionJson.etag(text), null, null);
     }
 
     /**
-     * 读取 Redis，未命中时按最近一次成功批次从表回填
+     * 读取会员数据：盘后视图只读 option:delayed:*（缺失不回源）；实时视图读 Redis，未命中时按最近一次成功批次从表回填
      */
     private String read(String key)
     {
+        if (OptionAccessContext.isDelayed())
+        {
+            return delayedReader.read(key, () -> read(key));
+        }
         String body = stringRedisTemplate.opsForValue().get(key);
         if (body == null && rebuild())
         {

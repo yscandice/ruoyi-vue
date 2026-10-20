@@ -40,6 +40,7 @@ public class OptionResourceController extends BaseController
     /**
      * 读取接口数据（premarket 需传 d=yyyy-MM-dd，缺省为美东当天）
      */
+    @PreAuthorize("@ss.hasPermi('option:sync:query')")
     @GetMapping("/today/{resource}")
     public void today(@PathVariable("resource") String resource, @RequestParam(value = "d", required = false) String d,
             HttpServletRequest request, HttpServletResponse response) throws IOException

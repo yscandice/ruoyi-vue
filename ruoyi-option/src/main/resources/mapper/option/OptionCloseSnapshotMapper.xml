@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.option.mapper.OptionCloseSnapshotMapper">
+
+    <resultMap type="OptionCloseSnapshot" id="OptionCloseSnapshotResult">
+        <id     property="snapshotId"            column="snapshot_id"           />
+        <result property="tradeDate"             column="trade_date"            />
+        <result property="cutoffEt"              column="cutoff_et"             />
+        <result property="cutoffTime"            column="cutoff_time"           />
+        <result property="cutoffTimeUtc"         column="cutoff_time_utc"       />
+        <result property="result"                column="result"                />
+        <result property="status"                column="status"                />
+        <result property="releasedAt"            column="released_at"           />
+        <result property="releasedAtUtc"         column="released_at_utc"       />
+        <result property="resourceCount"         column="resource_count"        />
+        <result property="keyCount"              column="key_count"             />
+        <result property="totalBytes"            column="total_bytes"           />
+        <result property="staleResources"        column="stale_resources"       />
+        <result property="sourceSync"            column="source_sync"           />
+        <result property="costMs"                column="cost_ms"               />
+        <result property="triggerType"           column="trigger_type"          />
+        <result property="message"               column="message"               />
+        <result property="createBy"              column="create_by"             />
+        <result property="createTime"            column="create_time"           />
+        <result property="createTimeUtc"         column="create_time_utc"       />
+    </resultMap>
+
+    <sql id="selectOptionCloseSnapshotVo">
+        select snapshot_id, trade_date, cutoff_et, cutoff_time, cutoff_time_utc, result, status, released_at, released_at_utc, resource_count, key_count, total_bytes, stale_resources, source_sync, cost_ms, trigger_type, message, create_by, create_time, create_time_utc
+        from option_close_snapshot
+    </sql>
+
+    <select id="selectOptionCloseSnapshotList" parameterType="OptionCloseSnapshot" resultMap="OptionCloseSnapshotResult">
+        <include refid="selectOptionCloseSnapshotVo"/>
+        <where>
+            <if test="snapshotId != null">and snapshot_id = #{snapshotId}</if>
+            <if test="result != null and result != ''">and result = #{result}</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+            <if test="resourceCount != null">and resource_count = #{resourceCount}</if>
+            <if test="keyCount != null">and key_count = #{keyCount}</if>
+            <if test="totalBytes != null">and total_bytes = #{totalBytes}</if>
+            <if test="costMs != null">and cost_ms = #{costMs}</if>
+            <if test="triggerType != null and triggerType != ''">and trigger_type = #{triggerType}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">and date_format(trade_date,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')</if>
+            <if test="params.endTime != null and params.endTime != ''">and date_format(trade_date,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')</if>
+        </where>
+        order by trade_date desc
+    </select>
+
+    <select id="selectOptionCloseSnapshotById" parameterType="Long" resultMap="OptionCloseSnapshotResult">
+        <include refid="selectOptionCloseSnapshotVo"/>
+        where snapshot_id = #{snapshotId}
+    </select>
+
+    <select id="selectOptionCloseSnapshotByTradeDate" parameterType="java.time.LocalDate" resultMap="OptionCloseSnapshotResult">
+        <include refid="selectOptionCloseSnapshotVo"/>
+        where trade_date = #{tradeDate}
+    </select>
+
+    <select id="selectLatestReleasedSnapshot" resultMap="OptionCloseSnapshotResult">
+        <include refid="selectOptionCloseSnapshotVo"/>
+        where status = 'RELEASED'
+        order by released_at desc, trade_date desc
+        limit 1
+    </select>
+
+    <select id="selectOptionCloseSnapshotBefore" resultMap="OptionCloseSnapshotResult">
+        <include refid="selectOptionCloseSnapshotVo"/>
+        where trade_date &lt; #{tradeDate} and result in ('SUCCESS', 'PARTIAL')
+        order by trade_date desc
+        limit 1
+    </select>
+
+    <select id="selectSuccessSnapshotOnOrBefore" resultMap="OptionCloseSnapshotResult">
+        <include refid="selectOptionCloseSnapshotVo"/>
+        where trade_date &lt;= #{tradeDate} and result in ('SUCCESS', 'PARTIAL')
+        order by trade_date desc
+        limit 1
+    </select>
+
+    <select id="selectExpiredSnapshotIds" resultType="Long">
+        select snapshot_id from option_close_snapshot
+        where trade_date &lt; #{tradeDate} and status != 'RELEASED'
+        order by trade_date
+    </select>
+
+    <update id="expireReleasedSnapshots">
+        update option_close_snapshot set status = 'EXPIRED'
+        where status = 'RELEASED' and snapshot_id != #{snapshotId}
+    </update>
+
+    <insert id="insertOptionCloseSnapshot" parameterType="OptionCloseSnapshot" useGeneratedKeys="true" keyProperty="snapshotId">
+        insert into option_close_snapshot
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="tradeDate != null">trade_date,</if>
+            <if test="cutoffEt != null">cutoff_et,</if>
+            <if test="cutoffTime != null">cutoff_time,</if>
+            <if test="cutoffTimeUtc != null">cutoff_time_utc,</if>
+            <if test="result != null and result != ''">result,</if>
+            <if test="status != null and status != ''">status,</if>
+            <if test="releasedAt != null">released_at,</if>
+            <if test="releasedAtUtc != null">released_at_utc,</if>
+            <if test="resourceCount != null">resource_count,</if>
+            <if test="keyCount != null">key_count,</if>
+            <if test="totalBytes != null">total_bytes,</if>
+            <if test="staleResources != null and staleResources != ''">stale_resources,</if>
+            <if test="sourceSync != null and sourceSync != ''">source_sync,</if>
+            <if test="costMs != null">cost_ms,</if>
+            <if test="triggerType != null and triggerType != ''">trigger_type,</if>
+            <if test="message != null and message != ''">message,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            create_time,
+            create_time_utc,
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="tradeDate != null">#{tradeDate},</if>
+            <if test="cutoffEt != null">#{cutoffEt},</if>
+            <if test="cutoffTime != null">#{cutoffTime},</if>
+            <if test="cutoffTimeUtc != null">#{cutoffTimeUtc},</if>
+            <if test="result != null and result != ''">#{result},</if>
+            <if test="status != null and status != ''">#{status},</if>
+            <if test="releasedAt != null">#{releasedAt},</if>
+            <if test="releasedAtUtc != null">#{releasedAtUtc},</if>
+            <if test="resourceCount != null">#{resourceCount},</if>
+            <if test="keyCount != null">#{keyCount},</if>
+            <if test="totalBytes != null">#{totalBytes},</if>
+            <if test="staleResources != null and staleResources != ''">#{staleResources},</if>
+            <if test="sourceSync != null and sourceSync != ''">#{sourceSync},</if>
+            <if test="costMs != null">#{costMs},</if>
+            <if test="triggerType != null and triggerType != ''">#{triggerType},</if>
+            <if test="message != null and message != ''">#{message},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            date_add(utc_timestamp(), interval 8 hour),
+            utc_timestamp(),
+        </trim>
+    </insert>
+
+    <update id="updateOptionCloseSnapshot" parameterType="OptionCloseSnapshot">
+        update option_close_snapshot
+        <set>
+            <if test="tradeDate != null">trade_date = #{tradeDate},</if>
+            <if test="cutoffEt != null">cutoff_et = #{cutoffEt},</if>
+            <if test="cutoffTime != null">cutoff_time = #{cutoffTime},</if>
+            <if test="cutoffTimeUtc != null">cutoff_time_utc = #{cutoffTimeUtc},</if>
+            <if test="result != null">result = #{result},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="releasedAt != null">released_at = #{releasedAt},</if>
+            <if test="releasedAtUtc != null">released_at_utc = #{releasedAtUtc},</if>
+            <if test="resourceCount != null">resource_count = #{resourceCount},</if>
+            <if test="keyCount != null">key_count = #{keyCount},</if>
+            <if test="totalBytes != null">total_bytes = #{totalBytes},</if>
+            <if test="staleResources != null">stale_resources = #{staleResources},</if>
+            <if test="sourceSync != null">source_sync = #{sourceSync},</if>
+            <if test="costMs != null">cost_ms = #{costMs},</if>
+            <if test="triggerType != null">trigger_type = #{triggerType},</if>
+            <if test="message != null">message = #{message},</if>
+        </set>
+        where snapshot_id = #{snapshotId}
+    </update>
+
+    <delete id="deleteOptionCloseSnapshotById" parameterType="Long">
+        delete from option_close_snapshot where snapshot_id = #{snapshotId}
+    </delete>
+
+    <delete id="deleteOptionCloseSnapshotByIds">
+        delete from option_close_snapshot where snapshot_id in
+        <foreach item="snapshotId" collection="array" open="(" separator="," close=")">
+            #{snapshotId}
+        </foreach>
+    </delete>
+
+</mapper>

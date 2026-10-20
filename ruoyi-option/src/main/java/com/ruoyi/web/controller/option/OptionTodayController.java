@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.ruoyi.common.annotation.Anonymous;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.annotation.RateLimiter;
 import com.ruoyi.common.core.controller.BaseController;
@@ -55,9 +54,12 @@ public class OptionTodayController extends BaseController
     private IOptionResourceService resourceService;
 
     /**
-     * 登录 OSM（Cookie 存入 Redis，供定时同步使用）
+     * 登录 OSM 同步账号（Cookie 存入 Redis，供定时同步使用）
+     * 
+     * 这是同步账号的上游登录，只有后台管理员能调用，会员调用返回 403（会员登录走若依 /login）
      */
-    @Anonymous
+    @PreAuthorize("@ss.hasRole('admin')")
+    @Log(title = "OSM会话", businessType = BusinessType.GRANT)
     @RateLimiter(time = 60, count = 5, limitType = LimitType.IP)
     @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Map<String, Object> login(@RequestBody LoginRequest body)
@@ -73,7 +75,7 @@ public class OptionTodayController extends BaseController
     @GetMapping("/feed")
     public void feed(HttpServletRequest request, HttpServletResponse response) throws Exception
     {
-        OptionFeedWriter.write(feedCacheService.get(OptionFeedConstants.GROUP_FULL), request, response);
+        OptionFeedWriter.write(feedCacheService.getView(OptionFeedConstants.GROUP_FULL), request, response);
     }
 
     @GetMapping("/seller-guide")
@@ -105,12 +107,6 @@ public class OptionTodayController extends BaseController
             throws Exception
     {
         read("premarket", d, request, response);
-    }
-
-    @GetMapping("/updates")
-    public void updates(HttpServletRequest request, HttpServletResponse response) throws Exception
-    {
-        read("updates", null, request, response);
     }
 
     @GetMapping("/support")
@@ -159,7 +155,7 @@ public class OptionTodayController extends BaseController
     private void read(String resource, String date, HttpServletRequest request, HttpServletResponse response)
             throws Exception
     {
-        OptionResourceController.write(resourceService.get(resource, date), request, response);
+        OptionResourceController.write(resourceService.getView(resource, date), request, response);
     }
 
     /**

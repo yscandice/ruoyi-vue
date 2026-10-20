@@ -32,6 +32,7 @@ import com.ruoyi.option.service.IOptionFeedCacheService;
 import com.ruoyi.option.service.IOptionFeedCacheService.FeedBody;
 import com.ruoyi.option.service.IOptionFeedSyncService;
 import com.ruoyi.option.service.IOptionSettlementService;
+import com.ruoyi.option.utils.OptionAccessContext;
 import com.ruoyi.option.utils.OptionJson;
 
 /**
@@ -74,6 +75,9 @@ public class OptionSettlementServiceImpl implements IOptionSettlementService
     private static final String FAILED = "FAILED";
 
     private final ReentrantLock rebuildLock = new ReentrantLock();
+
+    @Autowired
+    private OptionDelayedReader delayedReader;
 
     @Autowired
     private IOptionFeedSyncService feedSyncService;
@@ -428,14 +432,10 @@ public class OptionSettlementServiceImpl implements IOptionSettlementService
     public FeedBody getKind(String kind, SettlementQuery query)
     {
         OptionSettlementKind spec = requireKind(kind);
-        String body = stringRedisTemplate.opsForValue().get(DATA_KEY_PREFIX + spec.getKey());
+        String body = read(DATA_KEY_PREFIX + spec.getKey());
         if (body == null)
         {
-            body = rebuild() ? stringRedisTemplate.opsForValue().get(DATA_KEY_PREFIX + spec.getKey()) : null;
-            if (body == null)
-            {
-                return null;
-            }
+            return null;
         }
         if (query != null && !query.isEmpty())
         {
@@ -447,19 +447,34 @@ public class OptionSettlementServiceImpl implements IOptionSettlementService
     @Override
     public FeedBody getSummary()
     {
-        String body = stringRedisTemplate.opsForValue().get(SUMMARY_KEY);
+        String body = read(SUMMARY_KEY);
         if (body == null)
         {
-            body = rebuild() ? stringRedisTemplate.opsForValue().get(SUMMARY_KEY) : null;
-            if (body == null)
-            {
-                return null;
-            }
+            return null;
         }
         ObjectNode summary = (ObjectNode) OptionJson.read(body);
-        summary.set("status", OptionJson.MAPPER.valueToTree(redisCache.getCacheMap(STATUS_KEY)));
+        // 盘后视图不带实时同步状态
+        summary.set("status", OptionJson.MAPPER.valueToTree(
+                OptionAccessContext.isDelayed() ? delayedReader.status() : redisCache.getCacheMap(STATUS_KEY)));
         String text = OptionJson.write(summary);
         return new FeedBody(text, OptionJson.etag(text), null, null);
+    }
+
+    /**
+     * 读取会员数据：盘后视图只读 option:delayed:*（缺失不回源）；实时视图读 Redis，未命中时按最近一次成功批次从表回填
+     */
+    private String read(String key)
+    {
+        if (OptionAccessContext.isDelayed())
+        {
+            return delayedReader.read(key, () -> read(key));
+        }
+        String body = stringRedisTemplate.opsForValue().get(key);
+        if (body == null && rebuild())
+        {
+            body = stringRedisTemplate.opsForValue().get(key);
+        }
+        return body;
     }
 
     /**

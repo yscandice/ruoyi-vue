@@ -50,6 +50,7 @@ public class OptionFeedController extends BaseController
     /**
      * 完整 feed（与 OSM /api/member/feed 结构一致）
      */
+    @PreAuthorize("@ss.hasPermi('option:sync:query')")
     @GetMapping("/today/feed")
     public void feed(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
@@ -59,6 +60,7 @@ public class OptionFeedController extends BaseController
     /**
      * 当前版本元数据：syncId、generatedAt、各分组 ETag（前端轮询用）
      */
+    @PreAuthorize("@ss.hasPermi('option:sync:query')")
     @GetMapping("/today/meta")
     public AjaxResult meta()
     {
@@ -74,6 +76,7 @@ public class OptionFeedController extends BaseController
     /**
      * 分组 feed：meta / desk / signal / management / settlement / history / health / session / extra
      */
+    @PreAuthorize("@ss.hasPermi('option:sync:query')")
     @GetMapping("/today/feed/{group}")
     public void group(@PathVariable("group") String group, HttpServletRequest request, HttpServletResponse response)
             throws IOException

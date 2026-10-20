@@ -24,7 +24,7 @@ import com.ruoyi.option.service.IOptionUpdateService;
 /**
  * OSM「更新」菜单（/member/updates 功能更新）
  * 
- * 阅读进度沿用 {@link OptionTodayController}：GET /api/member/updates（seenSeq、currentSeq、seenAt、unseen）
+ * 阅读进度按用户记录，见 {@link OptionSettingsController}：GET /api/member/updates、PUT /api/member/updates/seen
  * 
  * 前端只读（Redis，带 ETag）：
  *   GET /api/member/updates/summary            汇总（页头、条目数、日期范围、按月 / 目标链接分布、最新 5 条、

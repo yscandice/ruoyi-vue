@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.option.mapper.OptionMemberNotificationMapper">
+
+    <resultMap type="OptionMemberNotification" id="OptionMemberNotificationResult">
+        <id     property="userId"                column="user_id"               />
+        <result property="newSignal"             column="new_signal"            />
+        <result property="protectionWindow"      column="protection_window"     />
+        <result property="takeProfitWindow"      column="take_profit_window"    />
+        <result property="settlement"            column="settlement"            />
+        <result property="weeklyScorecard"       column="weekly_scorecard"      />
+        <result property="productUpdate"         column="product_update"        />
+        <result property="silentReminder"        column="silent_reminder"       />
+        <result property="managementStop"        column="management_stop"       />
+        <result property="manageAdoptedOnly"     column="manage_adopted_only"   />
+        <result property="version"               column="version"               />
+        <result property="createTime"            column="create_time"           />
+        <result property="createTimeUtc"         column="create_time_utc"       />
+        <result property="updateTime"            column="update_time"           />
+        <result property="updateTimeUtc"         column="update_time_utc"       />
+    </resultMap>
+
+    <sql id="selectOptionMemberNotificationVo">
+        select user_id, new_signal, protection_window, take_profit_window, settlement, weekly_scorecard, product_update, silent_reminder, management_stop, manage_adopted_only, version, create_time, create_time_utc, update_time, update_time_utc
+        from option_member_notification
+    </sql>
+
+    <select id="selectOptionMemberNotificationList" parameterType="OptionMemberNotification" resultMap="OptionMemberNotificationResult">
+        <include refid="selectOptionMemberNotificationVo"/>
+        <where>
+            <if test="userId != null">and user_id = #{userId}</if>
+            <if test="newSignal != null and newSignal != ''">and new_signal = #{newSignal}</if>
+            <if test="protectionWindow != null and protectionWindow != ''">and protection_window = #{protectionWindow}</if>
+            <if test="takeProfitWindow != null and takeProfitWindow != ''">and take_profit_window = #{takeProfitWindow}</if>
+            <if test="settlement != null and settlement != ''">and settlement = #{settlement}</if>
+            <if test="weeklyScorecard != null and weeklyScorecard != ''">and weekly_scorecard = #{weeklyScorecard}</if>
+            <if test="productUpdate != null and productUpdate != ''">and product_update = #{productUpdate}</if>
+            <if test="silentReminder != null and silentReminder != ''">and silent_reminder = #{silentReminder}</if>
+            <if test="managementStop != null and managementStop != ''">and management_stop = #{managementStop}</if>
+            <if test="manageAdoptedOnly != null and manageAdoptedOnly != ''">and manage_adopted_only = #{manageAdoptedOnly}</if>
+            <if test="version != null">and version = #{version}</if>
+        </where>
+        order by user_id
+    </select>
+
+    <select id="selectOptionMemberNotificationById" parameterType="Long" resultMap="OptionMemberNotificationResult">
+        <include refid="selectOptionMemberNotificationVo"/>
+        where user_id = #{userId}
+    </select>
+
+    <insert id="insertOptionMemberNotification" parameterType="OptionMemberNotification">
+        insert into option_member_notification
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userId != null">user_id,</if>
+            <if test="newSignal != null and newSignal != ''">new_signal,</if>
+            <if test="protectionWindow != null and protectionWindow != ''">protection_window,</if>
+            <if test="takeProfitWindow != null and takeProfitWindow != ''">take_profit_window,</if>
+            <if test="settlement != null and settlement != ''">settlement,</if>
+            <if test="weeklyScorecard != null and weeklyScorecard != ''">weekly_scorecard,</if>
+            <if test="productUpdate != null and productUpdate != ''">product_update,</if>
+            <if test="silentReminder != null and silentReminder != ''">silent_reminder,</if>
+            <if test="managementStop != null and managementStop != ''">management_stop,</if>
+            <if test="manageAdoptedOnly != null and manageAdoptedOnly != ''">manage_adopted_only,</if>
+            create_time,
+            create_time_utc,
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userId != null">#{userId},</if>
+            <if test="newSignal != null and newSignal != ''">#{newSignal},</if>
+            <if test="protectionWindow != null and protectionWindow != ''">#{protectionWindow},</if>
+            <if test="takeProfitWindow != null and takeProfitWindow != ''">#{takeProfitWindow},</if>
+            <if test="settlement != null and settlement != ''">#{settlement},</if>
+            <if test="weeklyScorecard != null and weeklyScorecard != ''">#{weeklyScorecard},</if>
+            <if test="productUpdate != null and productUpdate != ''">#{productUpdate},</if>
+            <if test="silentReminder != null and silentReminder != ''">#{silentReminder},</if>
+            <if test="managementStop != null and managementStop != ''">#{managementStop},</if>
+            <if test="manageAdoptedOnly != null and manageAdoptedOnly != ''">#{manageAdoptedOnly},</if>
+            date_add(utc_timestamp(), interval 8 hour),
+            utc_timestamp(),
+        </trim>
+    </insert>
+
+    <update id="updateOptionMemberNotification" parameterType="OptionMemberNotification">
+        update option_member_notification
+        <set>
+            <if test="newSignal != null">new_signal = #{newSignal},</if>
+            <if test="protectionWindow != null">protection_window = #{protectionWindow},</if>
+            <if test="takeProfitWindow != null">take_profit_window = #{takeProfitWindow},</if>
+            <if test="settlement != null">settlement = #{settlement},</if>
+            <if test="weeklyScorecard != null">weekly_scorecard = #{weeklyScorecard},</if>
+            <if test="productUpdate != null">product_update = #{productUpdate},</if>
+            <if test="silentReminder != null">silent_reminder = #{silentReminder},</if>
+            <if test="managementStop != null">management_stop = #{managementStop},</if>
+            <if test="manageAdoptedOnly != null">manage_adopted_only = #{manageAdoptedOnly},</if>
+            version = version + 1,
+            update_time = date_add(utc_timestamp(), interval 8 hour),
+            update_time_utc = utc_timestamp(),
+        </set>
+        where user_id = #{userId} and version = #{version}
+    </update>
+
+    <delete id="deleteOptionMemberNotificationById" parameterType="Long">
+        delete from option_member_notification where user_id = #{userId}
+    </delete>
+
+    <delete id="deleteOptionMemberNotificationByIds">
+        delete from option_member_notification where user_id in
+        <foreach item="userId" collection="array" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </delete>
+
+</mapper>

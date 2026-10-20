@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.option.mapper.OptionMemberRegisterLogMapper">
+
+    <resultMap type="OptionMemberRegisterLog" id="OptionMemberRegisterLogResult">
+        <id     property="logId"                 column="log_id"                />
+        <result property="email"                 column="email"                 />
+        <result property="action"                column="action"                />
+        <result property="result"                column="result"                />
+        <result property="reason"                column="reason"                />
+        <result property="ip"                    column="ip"                    />
+        <result property="deviceHash"            column="device_hash"           />
+        <result property="createTime"            column="create_time"           />
+        <result property="createTimeUtc"         column="create_time_utc"       />
+    </resultMap>
+
+    <sql id="selectOptionMemberRegisterLogVo">
+        select log_id, email, action, result, reason, ip, device_hash, create_time, create_time_utc
+        from option_member_register_log
+    </sql>
+
+    <select id="selectOptionMemberRegisterLogList" parameterType="OptionMemberRegisterLog" resultMap="OptionMemberRegisterLogResult">
+        <include refid="selectOptionMemberRegisterLogVo"/>
+        <where>
+            <if test="logId != null">and log_id = #{logId}</if>
+            <if test="email != null and email != ''">and email like concat('%', #{email}, '%')</if>
+            <if test="action != null and action != ''">and action = #{action}</if>
+            <if test="result != null and result != ''">and result = #{result}</if>
+            <if test="ip != null and ip != ''">and ip = #{ip}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">and date_format(create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')</if>
+            <if test="params.endTime != null and params.endTime != ''">and date_format(create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')</if>
+        </where>
+        order by log_id desc
+    </select>
+
+    <select id="selectOptionMemberRegisterLogById" parameterType="Long" resultMap="OptionMemberRegisterLogResult">
+        <include refid="selectOptionMemberRegisterLogVo"/>
+        where log_id = #{logId}
+    </select>
+
+    <select id="countRegisterLog" resultType="int">
+        select count(1) from option_member_register_log
+        <where>
+            <if test="ip != null and ip != ''">and ip = #{ip}</if>
+            <if test="email != null and email != ''">and email = #{email}</if>
+            <if test="action != null and action != ''">and action = #{action}</if>
+            <if test="result != null and result != ''">and result = #{result}</if>
+            <if test="since != null">and create_time &gt;= #{since}</if>
+        </where>
+    </select>
+
+    <insert id="insertOptionMemberRegisterLog" parameterType="OptionMemberRegisterLog" useGeneratedKeys="true" keyProperty="logId">
+        insert into option_member_register_log
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="email != null and email != ''">email,</if>
+            <if test="action != null and action != ''">action,</if>
+            <if test="result != null and result != ''">result,</if>
+            <if test="reason != null and reason != ''">reason,</if>
+            <if test="ip != null and ip != ''">ip,</if>
+            <if test="deviceHash != null and deviceHash != ''">device_hash,</if>
+            create_time,
+            create_time_utc,
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="email != null and email != ''">#{email},</if>
+            <if test="action != null and action != ''">#{action},</if>
+            <if test="result != null and result != ''">#{result},</if>
+            <if test="reason != null and reason != ''">#{reason},</if>
+            <if test="ip != null and ip != ''">#{ip},</if>
+            <if test="deviceHash != null and deviceHash != ''">#{deviceHash},</if>
+            date_add(utc_timestamp(), interval 8 hour),
+            utc_timestamp(),
+        </trim>
+    </insert>
+
+    <update id="updateOptionMemberRegisterLog" parameterType="OptionMemberRegisterLog">
+        update option_member_register_log
+        <set>
+            <if test="email != null">email = #{email},</if>
+            <if test="action != null">action = #{action},</if>
+            <if test="result != null">result = #{result},</if>
+            <if test="reason != null">reason = #{reason},</if>
+            <if test="ip != null">ip = #{ip},</if>
+            <if test="deviceHash != null">device_hash = #{deviceHash},</if>
+        </set>
+        where log_id = #{logId}
+    </update>
+
+    <delete id="deleteOptionMemberRegisterLogById" parameterType="Long">
+        delete from option_member_register_log where log_id = #{logId}
+    </delete>
+
+    <delete id="deleteOptionMemberRegisterLogByIds">
+        delete from option_member_register_log where log_id in
+        <foreach item="logId" collection="array" open="(" separator="," close=")">
+            #{logId}
+        </foreach>
+    </delete>
+
+</mapper>

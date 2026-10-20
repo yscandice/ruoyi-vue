@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.option.mapper.OptionMarketDayMapper">
+
+    <resultMap type="OptionMarketDay" id="OptionMarketDayResult">
+        <id     property="tradeDate"             column="trade_date"            />
+        <result property="trading"               column="trading"               />
+        <result property="openTime"              column="open_time"             />
+        <result property="closeTime"             column="close_time"            />
+        <result property="earlyClose"            column="early_close"           />
+        <result property="holidayName"           column="holiday_name"          />
+        <result property="createBy"              column="create_by"             />
+        <result property="createTime"            column="create_time"           />
+        <result property="updateBy"              column="update_by"             />
+        <result property="updateTime"            column="update_time"           />
+        <result property="remark"                column="remark"                />
+    </resultMap>
+
+    <sql id="selectOptionMarketDayVo">
+        select trade_date, trading, open_time, close_time, early_close, holiday_name, create_by, create_time, update_by, update_time, remark
+        from option_market_calendar
+    </sql>
+
+    <select id="selectOptionMarketDayList" parameterType="OptionMarketDay" resultMap="OptionMarketDayResult">
+        <include refid="selectOptionMarketDayVo"/>
+        <where>
+            <if test="trading != null and trading != ''">and trading = #{trading}</if>
+            <if test="earlyClose != null and earlyClose != ''">and early_close = #{earlyClose}</if>
+            <if test="holidayName != null and holidayName != ''">and holiday_name = #{holidayName}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">and date_format(trade_date,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')</if>
+            <if test="params.endTime != null and params.endTime != ''">and date_format(trade_date,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')</if>
+        </where>
+        order by trade_date
+    </select>
+
+    <select id="selectOptionMarketDayById" parameterType="java.time.LocalDate" resultMap="OptionMarketDayResult">
+        <include refid="selectOptionMarketDayVo"/>
+        where trade_date = #{tradeDate}
+    </select>
+
+    <select id="selectOptionMarketDayByRange" resultMap="OptionMarketDayResult">
+        <include refid="selectOptionMarketDayVo"/>
+        where trade_date between #{beginDate} and #{endDate}
+        order by trade_date
+    </select>
+
+    <insert id="insertOptionMarketDay" parameterType="OptionMarketDay">
+        insert into option_market_calendar
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="tradeDate != null">trade_date,</if>
+            <if test="trading != null and trading != ''">trading,</if>
+            <if test="openTime != null and openTime != ''">open_time,</if>
+            <if test="closeTime != null and closeTime != ''">close_time,</if>
+            <if test="earlyClose != null and earlyClose != ''">early_close,</if>
+            <if test="holidayName != null and holidayName != ''">holiday_name,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            create_time,
+            <if test="updateBy != null and updateBy != ''">update_by,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="tradeDate != null">#{tradeDate},</if>
+            <if test="trading != null and trading != ''">#{trading},</if>
+            <if test="openTime != null and openTime != ''">#{openTime},</if>
+            <if test="closeTime != null and closeTime != ''">#{closeTime},</if>
+            <if test="earlyClose != null and earlyClose != ''">#{earlyClose},</if>
+            <if test="holidayName != null and holidayName != ''">#{holidayName},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            date_add(utc_timestamp(), interval 8 hour),
+            <if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateOptionMarketDay" parameterType="OptionMarketDay">
+        update option_market_calendar
+        <set>
+            <if test="trading != null">trading = #{trading},</if>
+            <if test="openTime != null">open_time = #{openTime},</if>
+            <if test="closeTime != null">close_time = #{closeTime},</if>
+            <if test="earlyClose != null">early_close = #{earlyClose},</if>
+            <if test="holidayName != null">holiday_name = #{holidayName},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = date_add(utc_timestamp(), interval 8 hour),
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        where trade_date = #{tradeDate}
+    </update>
+
+    <delete id="deleteOptionMarketDayById" parameterType="java.time.LocalDate">
+        delete from option_market_calendar where trade_date = #{tradeDate}
+    </delete>
+
+    <delete id="deleteOptionMarketDayByIds">
+        delete from option_market_calendar where trade_date in
+        <foreach item="tradeDate" collection="array" open="(" separator="," close=")">
+            #{tradeDate}
+        </foreach>
+    </delete>
+
+</mapper>

@@ -82,6 +82,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<if test="deptId != null and deptId != 0">
 			AND (u.dept_id = #{deptId} OR u.dept_id IN ( SELECT t.dept_id FROM sys_dept t WHERE find_in_set(#{deptId}, ancestors) ))
 		</if>
+		<!-- 默认不显示网站会员（角色 option_member），传 params[showMember]=true 才显示；会员请在「会员管理」维护 -->
+		<if test="params.showMember == null or params.showMember != 'true'">
+			AND NOT EXISTS ( SELECT 1 FROM sys_user_role ur INNER JOIN sys_role r ON r.role_id = ur.role_id WHERE ur.user_id = u.user_id AND r.role_key = 'option_member' )
+		</if>
 		<!-- 数据范围过滤 -->
 		${params.dataScope}
 	</select>

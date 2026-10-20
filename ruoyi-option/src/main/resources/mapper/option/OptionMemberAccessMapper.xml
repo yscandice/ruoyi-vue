@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.option.mapper.OptionMemberAccessMapper">
+
+    <resultMap type="OptionMemberAccess" id="OptionMemberAccessResult">
+        <id     property="userId"                column="user_id"               />
+        <result property="email"                 column="email"                 />
+        <result property="level"                 column="level"                 />
+        <result property="registerTime"          column="register_time"         />
+        <result property="registerTimeUtc"       column="register_time_utc"     />
+        <result property="trialEndTime"          column="trial_end_time"        />
+        <result property="trialEndTimeUtc"       column="trial_end_time_utc"    />
+        <result property="trialExtendHours"      column="trial_extend_hours"    />
+        <result property="paidUntil"             column="paid_until"            />
+        <result property="paidUntilUtc"          column="paid_until_utc"        />
+        <result property="status"                column="status"                />
+        <result property="registerIp"            column="register_ip"           />
+        <result property="deviceHash"            column="device_hash"           />
+        <result property="lastAccessTime"        column="last_access_time"      />
+        <result property="createBy"              column="create_by"             />
+        <result property="createTime"            column="create_time"           />
+        <result property="createTimeUtc"         column="create_time_utc"       />
+        <result property="updateBy"              column="update_by"             />
+        <result property="updateTime"            column="update_time"           />
+        <result property="updateTimeUtc"         column="update_time_utc"       />
+        <result property="remark"                column="remark"                />
+    </resultMap>
+
+    <sql id="selectOptionMemberAccessVo">
+        select user_id, email, level, register_time, register_time_utc, trial_end_time, trial_end_time_utc, trial_extend_hours, paid_until, paid_until_utc, status, register_ip, device_hash, last_access_time, create_by, create_time, create_time_utc, update_by, update_time, update_time_utc, remark
+        from option_member_access
+    </sql>
+
+    <select id="selectOptionMemberAccessList" parameterType="OptionMemberAccess" resultMap="OptionMemberAccessResult">
+        <include refid="selectOptionMemberAccessVo"/>
+        <where>
+            <if test="userId != null">and user_id = #{userId}</if>
+            <if test="email != null and email != ''">and email like concat('%', #{email}, '%')</if>
+            <if test="level != null and level != ''">and level = #{level}</if>
+            <if test="trialExtendHours != null">and trial_extend_hours = #{trialExtendHours}</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+            <if test="registerIp != null and registerIp != ''">and register_ip = #{registerIp}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">and date_format(register_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')</if>
+            <if test="params.endTime != null and params.endTime != ''">and date_format(register_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')</if>
+        </where>
+        order by register_time desc
+    </select>
+
+    <select id="selectOptionMemberAccessById" parameterType="Long" resultMap="OptionMemberAccessResult">
+        <include refid="selectOptionMemberAccessVo"/>
+        where user_id = #{userId}
+    </select>
+
+    <select id="selectOptionMemberAccessByEmail" parameterType="String" resultMap="OptionMemberAccessResult">
+        <include refid="selectOptionMemberAccessVo"/>
+        where email = #{email}
+    </select>
+
+    <select id="countMemberByDevice" resultType="int">
+        select count(1) from option_member_access where device_hash = #{deviceHash} and register_time &gt;= #{since}
+    </select>
+
+    <insert id="insertOptionMemberAccess" parameterType="OptionMemberAccess">
+        insert into option_member_access
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userId != null">user_id,</if>
+            <if test="email != null and email != ''">email,</if>
+            <if test="level != null and level != ''">level,</if>
+            <if test="registerTime != null">register_time,</if>
+            <if test="registerTimeUtc != null">register_time_utc,</if>
+            <if test="trialEndTime != null">trial_end_time,</if>
+            <if test="trialEndTimeUtc != null">trial_end_time_utc,</if>
+            <if test="trialExtendHours != null">trial_extend_hours,</if>
+            <if test="paidUntil != null">paid_until,</if>
+            <if test="paidUntilUtc != null">paid_until_utc,</if>
+            <if test="status != null and status != ''">status,</if>
+            <if test="registerIp != null and registerIp != ''">register_ip,</if>
+            <if test="deviceHash != null and deviceHash != ''">device_hash,</if>
+            <if test="lastAccessTime != null">last_access_time,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            create_time,
+            create_time_utc,
+            <if test="updateBy != null and updateBy != ''">update_by,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userId != null">#{userId},</if>
+            <if test="email != null and email != ''">#{email},</if>
+            <if test="level != null and level != ''">#{level},</if>
+            <if test="registerTime != null">#{registerTime},</if>
+            <if test="registerTimeUtc != null">#{registerTimeUtc},</if>
+            <if test="trialEndTime != null">#{trialEndTime},</if>
+            <if test="trialEndTimeUtc != null">#{trialEndTimeUtc},</if>
+            <if test="trialExtendHours != null">#{trialExtendHours},</if>
+            <if test="paidUntil != null">#{paidUntil},</if>
+            <if test="paidUntilUtc != null">#{paidUntilUtc},</if>
+            <if test="status != null and status != ''">#{status},</if>
+            <if test="registerIp != null and registerIp != ''">#{registerIp},</if>
+            <if test="deviceHash != null and deviceHash != ''">#{deviceHash},</if>
+            <if test="lastAccessTime != null">#{lastAccessTime},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            date_add(utc_timestamp(), interval 8 hour),
+            utc_timestamp(),
+            <if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateOptionMemberAccess" parameterType="OptionMemberAccess">
+        update option_member_access
+        <set>
+            <if test="email != null">email = #{email},</if>
+            <if test="level != null">level = #{level},</if>
+            <if test="registerTime != null">register_time = #{registerTime},</if>
+            <if test="registerTimeUtc != null">register_time_utc = #{registerTimeUtc},</if>
+            <if test="trialEndTime != null">trial_end_time = #{trialEndTime},</if>
+            <if test="trialEndTimeUtc != null">trial_end_time_utc = #{trialEndTimeUtc},</if>
+            <if test="trialExtendHours != null">trial_extend_hours = #{trialExtendHours},</if>
+            <if test="paidUntil != null">paid_until = #{paidUntil},</if>
+            <if test="paidUntilUtc != null">paid_until_utc = #{paidUntilUtc},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="registerIp != null">register_ip = #{registerIp},</if>
+            <if test="deviceHash != null">device_hash = #{deviceHash},</if>
+            <if test="lastAccessTime != null">last_access_time = #{lastAccessTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = date_add(utc_timestamp(), interval 8 hour),
+            update_time_utc = utc_timestamp(),
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        where user_id = #{userId}
+    </update>
+
+    <update id="updateOptionMemberAccessLevel">
+        update option_member_access set level = #{level} where user_id = #{userId} and level != #{level}
+    </update>
+
+    <delete id="deleteOptionMemberAccessById" parameterType="Long">
+        delete from option_member_access where user_id = #{userId}
+    </delete>
+
+    <delete id="deleteOptionMemberAccessByIds">
+        delete from option_member_access where user_id in
+        <foreach item="userId" collection="array" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </delete>
+
+</mapper>

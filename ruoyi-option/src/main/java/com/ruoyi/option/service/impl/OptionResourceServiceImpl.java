@@ -22,9 +22,13 @@ import com.ruoyi.option.domain.OptionResourceSync;
 import com.ruoyi.option.domain.OptionResourceVersion;
 import com.ruoyi.option.enums.OptionResource;
 import com.ruoyi.option.mapper.OptionResourceMapper;
+import com.ruoyi.option.service.IOptionAccessService;
+import com.ruoyi.option.service.IOptionCloseSnapshotService;
 import com.ruoyi.option.service.IOptionFeedCacheService.FeedBody;
 import com.ruoyi.option.service.IOptionResourceService;
 import com.ruoyi.option.service.IOptionSessionService;
+import com.ruoyi.option.utils.OptionAccessContext;
+import com.ruoyi.option.utils.OptionCacheKeys;
 import com.ruoyi.option.utils.OptionJson;
 import com.ruoyi.option.utils.OptionMarketCalendar;
 
@@ -71,6 +75,12 @@ public class OptionResourceServiceImpl implements IOptionResourceService
 
     @Autowired
     private RedisCache redisCache;
+
+    @Autowired
+    private IOptionCloseSnapshotService closeSnapshotService;
+
+    @Autowired
+    private IOptionAccessService accessService;
 
     @Override
     public Map<String, Object> sync(String resource, String date, boolean force, String trigger)
@@ -182,6 +192,36 @@ public class OptionResourceServiceImpl implements IOptionResourceService
             writeRedis(spec, key, body);
         }
         return new FeedBody(body, OptionJson.etag(body), null, null);
+    }
+
+    @Override
+    public FeedBody getView(String resource, String date)
+    {
+        if (!OptionAccessContext.isDelayed())
+        {
+            return get(resource, date);
+        }
+        OptionResource spec = requireResource(resource);
+        String key = OptionCacheKeys.delayed(redisKey(spec, bizKey(spec, date)));
+        String body = stringRedisTemplate.opsForValue().get(key);
+        if (body == null && OptionAccessContext.hasRelease() && closeSnapshotService.restoreIfMissing())
+        {
+            body = stringRedisTemplate.opsForValue().get(key);
+        }
+        if (body != null)
+        {
+            return new FeedBody(body, OptionJson.etag(body), null, null);
+        }
+        if (accessService.isDelayedFallbackRealtime())
+        {
+            log.warn("盘后视图缺少 {}，按 delayedFallback=REALTIME 回落实时", key);
+            return get(resource, date);
+        }
+        // 只借用实时数据的结构，不带任何实际值
+        FeedBody realtime = get(resource, date);
+        String empty = OptionJson.emptyStructure(realtime == null ? null : realtime.body());
+        OptionAccessContext.markEmpty();
+        return new FeedBody(empty, OptionJson.etag(empty), null, null);
     }
 
     @Override
