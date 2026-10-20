@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.ruoyi.common.annotation.Anonymous;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.annotation.RateLimiter;
 import com.ruoyi.common.core.controller.BaseController;
@@ -55,9 +54,12 @@ public class OptionTodayController extends BaseController
     private IOptionResourceService resourceService;
 
     /**
-     * 登录 OSM（Cookie 存入 Redis，供定时同步使用）
+     * 登录 OSM 同步账号（Cookie 存入 Redis，供定时同步使用）
+     * 
+     * 这是同步账号的上游登录，只有后台管理员能调用，会员调用返回 403（会员登录走若依 /login）
      */
-    @Anonymous
+    @PreAuthorize("@ss.hasRole('admin')")
+    @Log(title = "OSM会话", businessType = BusinessType.GRANT)
     @RateLimiter(time = 60, count = 5, limitType = LimitType.IP)
     @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Map<String, Object> login(@RequestBody LoginRequest body)

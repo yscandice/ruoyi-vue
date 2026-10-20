@@ -26,7 +26,8 @@ import com.ruoyi.option.service.IOptionInfoService;
  * OSM「信息」菜单（盘前简报 / 财报解读 / 札记 + 信息流、推荐信息）
  * 
  * 读接口只读定时同步后的 Redis 缓存（未命中时从表回填），不实时请求 OSM；
- * 信息页公共接口 feed、seller-guide、entitlement、updates、support 沿用 {@link OptionTodayController}。
+ * 信息页公共接口 feed、seller-guide、entitlement、updates、support 沿用 {@link OptionTodayController}；
+ * 推荐信息 /api/member/referrals 属于同步账号的个人数据，已下线，改由 {@link OptionSettingsController} 固定返回。
  * 
  * @author yscandice
  */
@@ -43,15 +44,6 @@ public class OptionInfoController extends BaseController
     public void infoFeed(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         OptionResourceController.write(infoService.getRaw(OptionInfo.INFO_FEED.getKey()), request, response);
-    }
-
-    /**
-     * 推荐信息（盘前简报分享组件）
-     */
-    @GetMapping("/api/member/referrals")
-    public void referrals(HttpServletRequest request, HttpServletResponse response) throws IOException
-    {
-        OptionResourceController.write(infoService.getRaw(OptionInfo.REFERRALS.getKey()), request, response);
     }
 
     /**
