@@ -489,4 +489,60 @@ public class OptionAccessServiceImpl implements IOptionAccessService
         policyCacheAt = now;
         return policyCache;
     }
+
+    @Override
+    public Map<String, Object> checkPolicies(List<Map<String, Object>> endpoints)
+    {
+        OptionAccessLevel[] levels = { OptionAccessLevel.STAFF, OptionAccessLevel.PAID, OptionAccessLevel.TRIAL,
+                OptionAccessLevel.DELAYED };
+        List<Map<String, Object>> items = new ArrayList<>();
+        List<String> unregistered = new ArrayList<>();
+        int registered = 0;
+        int excluded = 0;
+        for (Map<String, Object> endpoint : endpoints)
+        {
+            String path = String.valueOf(endpoint.get("path"));
+            if (!PATH_MATCHER.match(OptionAccessConstants.ACCESS_PATH_PATTERN, path))
+            {
+                continue;
+            }
+            Map<String, Object> item = new LinkedHashMap<>(endpoint);
+            boolean skip = Arrays.stream(OptionAccessConstants.ACCESS_EXCLUDE_PATTERNS)
+                    .anyMatch(pattern -> PATH_MATCHER.match(pattern, path));
+            OptionAccessPolicy policy = skip ? null : matchPolicy(path);
+            item.put("excluded", skip);
+            item.put("resource", policy == null ? null : policy.getResourceCode());
+            item.put("resourceName", policy == null ? null : policy.getResourceName());
+            if (skip)
+            {
+                excluded++;
+            }
+            else
+            {
+                Map<String, Object> views = new LinkedHashMap<>();
+                for (OptionAccessLevel level : levels)
+                {
+                    views.put(level.getCode(), resolveView(level, policy).getCode());
+                }
+                item.put("views", views);
+                if (policy == null)
+                {
+                    unregistered.add(endpoint.get("methods") + " " + path);
+                }
+                else
+                {
+                    registered++;
+                }
+            }
+            items.add(item);
+        }
+        items.sort(Comparator.comparing(item -> String.valueOf(item.get("path"))));
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("total", items.size());
+        result.put("registered", registered);
+        result.put("excluded", excluded);
+        result.put("unregistered", unregistered);
+        result.put("items", items);
+        return result;
+    }
 }

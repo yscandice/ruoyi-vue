@@ -2,6 +2,7 @@ package com.ruoyi.option.utils;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 import com.ruoyi.option.enums.OptionAccessLevel;
 import com.ruoyi.option.enums.OptionDataView;
 
@@ -82,6 +83,28 @@ public class OptionAccessContext
     public static boolean isDelayed()
     {
         return currentView() == OptionDataView.DELAYED;
+    }
+
+    /**
+     * 临时按实时视图执行（只用于盘后视图缺失时取空结构的模板或 delayedFallback = REALTIME），执行完恢复原视图
+     */
+    public static <T> T realtime(Supplier<T> action)
+    {
+        OptionAccessContext context = HOLDER.get();
+        if (context == null)
+        {
+            return action.get();
+        }
+        OptionDataView view = context.view;
+        context.view = OptionDataView.REALTIME;
+        try
+        {
+            return action.get();
+        }
+        finally
+        {
+            context.view = view;
+        }
     }
 
     /**

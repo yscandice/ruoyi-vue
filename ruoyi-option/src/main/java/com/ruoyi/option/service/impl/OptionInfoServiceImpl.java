@@ -32,6 +32,7 @@ import com.ruoyi.option.mapper.OptionInfoMapper;
 import com.ruoyi.option.service.IOptionFeedCacheService.FeedBody;
 import com.ruoyi.option.service.IOptionInfoService;
 import com.ruoyi.option.service.IOptionSessionService;
+import com.ruoyi.option.utils.OptionAccessContext;
 import com.ruoyi.option.utils.OptionJson;
 import com.ruoyi.option.utils.OptionPageParser;
 
@@ -70,6 +71,9 @@ public class OptionInfoServiceImpl implements IOptionInfoService
     private static final Pattern DATE = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}$");
 
     private static final Pattern SLUG = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$");
+
+    @Autowired
+    private OptionDelayedReader delayedReader;
 
     @Autowired
     private OsmClient osmClient;
@@ -589,11 +593,16 @@ public class OptionInfoServiceImpl implements IOptionInfoService
     }
 
     /**
-     * 读一行内容：Redis 优先，未命中从表回填
+     * 读一行内容：盘后视图只读 option:delayed:info:*；实时视图 Redis 优先，未命中从表回填
      */
     private String readRow(OptionInfo spec, String bizKey)
     {
         String key = redisKey(spec, bizKey);
+        if (OptionAccessContext.isDelayed())
+        {
+            // 列表（index）缺失返回空结构；详情缺失按“该条不存在”处理（missing），不从版本表回填
+            return delayedReader.read(key, () -> readRow(spec, bizKey), OptionInfo.INDEX_KEY.equals(bizKey));
+        }
         String body = stringRedisTemplate.opsForValue().get(key);
         if (body == null)
         {

@@ -309,5 +309,6 @@ from (
   union all select 'academy', '学堂', '/api/member/academy,/api/member/academy/**', 'option:academy:', 'REALTIME', 'REALTIME', 7, '教学内容不怕延迟'
   union all select 'update', '更新', '/api/member/updates/**', 'option:update:', 'REALTIME', 'REALTIME', 8, '产品更新内容'
   union all select 'settings', '设置', '/api/member/settings/**,/api/member/profile,/api/member/notifications,/api/member/password,/api/member/avatar,/api/member/referrals,/api/member/push,/api/member/api-keys,/api/member/advisory-contact', null, 'SELF', 'SELF', 9, '本人数据，不走同步'
+  union all select 'manage', '管理接口', '/api/member/login,/api/member/today/snapshot', null, 'REALTIME', 'DENY', 0, '同步账号登录与手动导入，接口本身限管理员；盘后版直接拒绝'
 ) t
 where not exists (select 1 from option_access_policy p where p.resource_code = t.resource_code);

@@ -131,4 +131,12 @@ public interface IOptionAccessService
      * 清除进程内策略缓存
      */
     public void clearPolicyCache();
+
+    /**
+     * 核对会员接口与菜单策略：逐条给出所属菜单和各身份视图，列出未登记策略的路径
+     * 
+     * @param endpoints 接口列表，每项 path（路径模板）与 methods（请求方法）
+     * @return total / registered / excluded / unregistered / items
+     */
+    public Map<String, Object> checkPolicies(List<Map<String, Object>> endpoints);
 }

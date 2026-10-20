@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import com.ruoyi.option.constant.OptionAccessConstants;
 import com.ruoyi.option.interceptor.OptionAccessInterceptor;
 
 /**
@@ -20,7 +21,7 @@ public class OptionWebMvcConfig implements WebMvcConfigurer
     @Override
     public void addInterceptors(InterceptorRegistry registry)
     {
-        registry.addInterceptor(accessInterceptor).addPathPatterns("/api/member/**")
-                .excludePathPatterns("/api/member/register/**", "/api/member/access");
+        registry.addInterceptor(accessInterceptor).addPathPatterns(OptionAccessConstants.ACCESS_PATH_PATTERN)
+                .excludePathPatterns(OptionAccessConstants.ACCESS_EXCLUDE_PATTERNS);
     }
 }

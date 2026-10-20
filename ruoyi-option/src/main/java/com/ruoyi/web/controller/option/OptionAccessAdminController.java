@@ -6,9 +6,13 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +23,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
@@ -49,6 +56,10 @@ public class OptionAccessAdminController extends BaseController
     @Autowired
     private IOptionCloseSnapshotService closeSnapshotService;
 
+    @Autowired
+    @Qualifier("requestMappingHandlerMapping")
+    private RequestMappingHandlerMapping handlerMapping;
+
     /**
      * 菜单策略列表
      */
@@ -59,6 +70,31 @@ public class OptionAccessAdminController extends BaseController
         startPage();
         List<OptionAccessPolicy> list = accessService.selectPolicyList(policy);
         return getDataTable(list);
+    }
+
+    /**
+     * 核对策略：列出全部 /api/member/** 接口的所属菜单和各身份视图，unregistered 为未登记策略的路径（应为空）
+     */
+    @PreAuthorize("@ss.hasPermi('option:access:list')")
+    @GetMapping("/policy/check")
+    public AjaxResult policyCheck()
+    {
+        List<Map<String, Object>> endpoints = new ArrayList<>();
+        for (Map.Entry<RequestMappingInfo, HandlerMethod> entry : handlerMapping.getHandlerMethods().entrySet())
+        {
+            RequestMappingInfo info = entry.getKey();
+            String methods = info.getMethodsCondition().getMethods().isEmpty() ? "ALL"
+                    : String.join(",", new TreeSet<>(info.getMethodsCondition().getMethods().stream().map(Enum::name).toList()));
+            for (String path : info.getPatternValues())
+            {
+                Map<String, Object> endpoint = new LinkedHashMap<>();
+                endpoint.put("path", path);
+                endpoint.put("methods", methods);
+                endpoint.put("handler", entry.getValue().getBeanType().getSimpleName() + "." + entry.getValue().getMethod().getName());
+                endpoints.add(endpoint);
+            }
+        }
+        return success(accessService.checkPolicies(endpoints));
     }
 
     /**

@@ -115,4 +115,10 @@ public class OptionAccessConstants
     private OptionAccessConstants()
     {
     }
+
+    /** 数据权限拦截路径 */
+    public static final String ACCESS_PATH_PATTERN = "/api/member/**";
+
+    /** 数据权限拦截排除路径（注册、当前身份） */
+    public static final String[] ACCESS_EXCLUDE_PATTERNS = { "/api/member/register/**", "/api/member/access" };
 }
