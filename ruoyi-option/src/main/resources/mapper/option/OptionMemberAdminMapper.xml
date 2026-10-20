@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.option.mapper.OptionMemberAdminMapper">
+
+    <resultMap type="com.ruoyi.option.domain.vo.OptionMemberVo" id="OptionMemberVoResult">
+        <id     property="userId"                 column="user_id"                 />
+        <result property="email"                  column="email"                   />
+        <result property="nickName"               column="nick_name"               />
+        <result property="avatar"                 column="avatar"                  />
+        <result property="level"                  column="level"                   />
+        <result property="status"                 column="status"                  />
+        <result property="registerTime"           column="register_time"           />
+        <result property="trialEndTime"           column="trial_end_time"          />
+        <result property="trialRemainingSeconds"  column="trial_remaining_seconds" />
+        <result property="trialExtendHours"       column="trial_extend_hours"      />
+        <result property="paidUntil"              column="paid_until"              />
+        <result property="lastAccessTime"         column="last_access_time"        />
+        <result property="registerIp"             column="register_ip"             />
+        <result property="remark"                 column="remark"                  />
+    </resultMap>
+
+    <!-- 东八区当前时间（库里 register_time / trial_end_time / paid_until 都是东八区） -->
+    <sql id="now8">date_add(utc_timestamp(), interval 8 hour)</sql>
+
+    <!-- 身份按 3.1 规则实时计算：停用 > 付费 > 体验期 > 盘后版（表里的 level 只用于加速统计） -->
+    <sql id="memberVo">
+        select a.user_id, coalesce(nullif(u.email, ''), a.email) email, u.nick_name, u.avatar,
+               case when a.status = '1' or u.status = '1' then 'DISABLED'
+                    when a.paid_until is not null and a.paid_until &gt; <include refid="now8"/> then 'PAID'
+                    when a.trial_end_time is not null and a.trial_end_time &gt; <include refid="now8"/> then 'TRIAL'
+                    else 'DELAYED' end level,
+               if(a.status = '1' or u.status = '1', '1', '0') status,
+               a.register_time, a.trial_end_time,
+               greatest(0, coalesce(timestampdiff(second, <include refid="now8"/>, a.trial_end_time), 0)) trial_remaining_seconds,
+               a.trial_extend_hours, a.paid_until, a.last_access_time, a.register_ip, a.remark
+        from option_member_access a
+        inner join sys_user u on u.user_id = a.user_id and u.del_flag = '0'
+    </sql>
+
+    <select id="selectMemberList" parameterType="com.ruoyi.option.domain.vo.OptionMemberVo" resultMap="OptionMemberVoResult">
+        select * from (<include refid="memberVo"/>) m
+        <where>
+            <if test="userId != null">and m.user_id = #{userId}</if>
+            <if test="email != null and email != ''">and m.email like concat('%', #{email}, '%')</if>
+            <if test="level != null and level != ''">and m.level = #{level}</if>
+            <if test="status != null and status != ''">and m.status = #{status}</if>
+            <if test="registerIp != null and registerIp != ''">and m.register_ip = #{registerIp}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">and date_format(m.register_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')</if>
+            <if test="params.endTime != null and params.endTime != ''">and date_format(m.register_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')</if>
+            <if test="params.beginTrialTime != null and params.beginTrialTime != ''">and date_format(m.trial_end_time,'%Y%m%d') &gt;= date_format(#{params.beginTrialTime},'%Y%m%d')</if>
+            <if test="params.endTrialTime != null and params.endTrialTime != ''">and date_format(m.trial_end_time,'%Y%m%d') &lt;= date_format(#{params.endTrialTime},'%Y%m%d')</if>
+        </where>
+        order by m.register_time desc, m.user_id desc
+    </select>
+
+    <select id="selectMemberStats" resultType="java.util.LinkedHashMap">
+        select count(1) `total`,
+               coalesce(sum(m.register_time &gt;= date(<include refid="now8"/>)), 0) `today`,
+               coalesce(sum(m.level = 'TRIAL'), 0) `trial`,
+               coalesce(sum(m.level = 'DELAYED'), 0) `delayed`,
+               coalesce(sum(m.level = 'PAID'), 0) `paid`,
+               coalesce(sum(m.level = 'DISABLED'), 0) `disabled`
+        from (<include refid="memberVo"/>) m
+    </select>
+
+    <select id="selectRegisterDaily" resultType="java.util.LinkedHashMap">
+        select date_format(a.register_time, '%Y-%m-%d') day, count(1) count
+        from option_member_access a
+        inner join sys_user u on u.user_id = a.user_id and u.del_flag = '0'
+        where a.register_time &gt;= #{since}
+        group by date_format(a.register_time, '%Y-%m-%d')
+        order by day
+    </select>
+
+    <select id="selectMemberIds" resultType="java.lang.Long">
+        select a.user_id from option_member_access a
+        inner join sys_user u on u.user_id = a.user_id and u.del_flag = '0'
+        where a.user_id in
+        <foreach item="userId" collection="userIds" open="(" separator="," close=")">#{userId}</foreach>
+    </select>
+
+    <update id="extendTrial">
+        update option_member_access
+        set trial_end_time = date_add(coalesce(trial_end_time, register_time), interval #{hours} hour),
+            trial_end_time_utc = date_add(coalesce(trial_end_time_utc, register_time_utc), interval #{hours} hour),
+            trial_extend_hours = trial_extend_hours + #{hours},
+            <if test="remark != null and remark != ''">remark = #{remark},</if>
+            update_by = #{updateBy},
+            update_time = <include refid="now8"/>,
+            update_time_utc = utc_timestamp()
+        where user_id in
+        <foreach item="userId" collection="userIds" open="(" separator="," close=")">#{userId}</foreach>
+    </update>
+
+    <!-- paidUntil 按东八区写入（JDBC serverTimezone=GMT+8），UTC 列减 8 小时 -->
+    <update id="updatePaidUntil">
+        update option_member_access
+        set paid_until = #{paidUntil},
+            paid_until_utc = date_sub(#{paidUntil}, interval 8 hour),
+            update_by = #{updateBy},
+            update_time = <include refid="now8"/>,
+            update_time_utc = utc_timestamp()
+        where user_id = #{userId}
+    </update>
+
+    <update id="updateMemberStatus">
+        update option_member_access
+        set status = #{status},
+            update_by = #{updateBy},
+            update_time = <include refid="now8"/>,
+            update_time_utc = utc_timestamp()
+        where user_id = #{userId}
+    </update>
+
+    <update id="updateLastAccessTime">
+        update option_member_access set last_access_time = <include refid="now8"/> where user_id = #{userId}
+    </update>
+
+</mapper>

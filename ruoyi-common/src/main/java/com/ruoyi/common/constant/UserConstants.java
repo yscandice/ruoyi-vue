@@ -78,4 +78,12 @@ public class UserConstants
      */
     public static final int PASSWORD_MIN_LENGTH = 5;
     public static final int PASSWORD_MAX_LENGTH = 20;
+
+    /** 网站会员角色（数据权限：会员不能登录后台） */
+    public static final String MEMBER_ROLE_KEY = "option_member";
+
+    /** 客户端类型请求头：后台管理系统登录时带 X-Client-Type: admin */
+    public static final String CLIENT_TYPE_HEADER = "X-Client-Type";
+
+    public static final String CLIENT_TYPE_ADMIN = "admin";
 }

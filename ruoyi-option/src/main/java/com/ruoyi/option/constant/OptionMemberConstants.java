@@ -105,4 +105,9 @@ public class OptionMemberConstants
 
     /** 显示名称长度（sys_user.nick_name） */
     public static final int DISPLAY_NAME_MAX_LENGTH = 30;
+
+    /** 最近访问时间写库间隔：每个用户最多 5 分钟写一次 */
+    public static final String LAST_ACCESS_KEY = "option:member:lastAccess:";
+
+    public static final int LAST_ACCESS_INTERVAL_MINUTES = 5;
 }

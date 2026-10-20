@@ -14,9 +14,11 @@ import com.ruoyi.common.constant.HttpStatus;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.domain.model.LoginUser;
 import com.ruoyi.common.utils.ServletUtils;
+import com.ruoyi.option.constant.OptionAccessConstants;
 import com.ruoyi.option.enums.OptionAccessLevel;
 import com.ruoyi.option.enums.OptionDataView;
 import com.ruoyi.option.service.IOptionAccessService;
+import com.ruoyi.option.service.IOptionMemberAdminService;
 import com.ruoyi.option.utils.OptionAccessContext;
 
 /**
@@ -47,10 +49,15 @@ public class OptionAccessInterceptor implements HandlerInterceptor
     @Autowired
     private IOptionAccessService accessService;
 
+    @Autowired
+    private IOptionMemberAdminService memberAdminService;
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception
     {
         OptionAccessContext.clear();
+        // 会员最近访问时间（与总开关无关；每个用户最多 5 分钟写一次库）
+        touchLastAccess();
         if (!accessService.isEnabled())
         {
             return true;
@@ -119,5 +126,19 @@ public class OptionAccessInterceptor implements HandlerInterceptor
     private static void deny(HttpServletResponse response, String message)
     {
         ServletUtils.renderString(response, JSON.toJSONString(AjaxResult.error(HttpStatus.FORBIDDEN, message)));
+    }
+
+    /**
+     * 只记录会员角色（option_member）的访问
+     */
+    private void touchLastAccess()
+    {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof LoginUser loginUser && loginUser.getUser() != null
+                && loginUser.getUser().getRoles() != null && loginUser.getUser().getRoles().stream()
+                        .anyMatch(role -> OptionAccessConstants.ROLE_MEMBER.equals(role.getRoleKey())))
+        {
+            memberAdminService.touchLastAccess(loginUser.getUserId());
+        }
     }
 }

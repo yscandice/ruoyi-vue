@@ -1,6 +1,7 @@
 package com.ruoyi.framework.web.service;
 
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 import com.ruoyi.common.constant.CacheConstants;
 import com.ruoyi.common.constant.Constants;
 import com.ruoyi.common.constant.UserConstants;
+import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.core.domain.model.LoginUser;
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.exception.ServiceException;
@@ -20,6 +22,7 @@ import com.ruoyi.common.exception.user.UserNotExistsException;
 import com.ruoyi.common.exception.user.UserPasswordNotMatchException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.MessageUtils;
+import com.ruoyi.common.utils.ServletUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.ip.IpUtils;
 import com.ruoyi.framework.manager.AsyncManager;
@@ -92,8 +95,14 @@ public class SysLoginService
         {
             AuthenticationContextHolder.clearContext();
         }
-        AsyncManager.me().execute(AsyncFactory.recordLogininfor(username, Constants.LOGIN_SUCCESS, MessageUtils.message("user.login.success")));
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+        // 后台管理系统登录（X-Client-Type: admin）不允许网站会员账号
+        if (isAdminClient() && isMemberAccount(loginUser))
+        {
+            AsyncManager.me().execute(AsyncFactory.recordLogininfor(username, Constants.LOGIN_FAIL, "该账号无后台权限"));
+            throw new ServiceException("该账号无后台权限");
+        }
+        AsyncManager.me().execute(AsyncFactory.recordLogininfor(username, Constants.LOGIN_SUCCESS, MessageUtils.message("user.login.success")));
         recordLoginInfo(loginUser.getUserId());
         // 生成token
         return tokenService.createToken(loginUser);
@@ -172,5 +181,27 @@ public class SysLoginService
     public void recordLoginInfo(Long userId)
     {
         userService.updateLoginInfo(userId, IpUtils.getIpAddr(), DateUtils.getNowDate());
+    }
+
+    /**
+     * 是否后台管理系统发起的登录
+     */
+    private boolean isAdminClient()
+    {
+        HttpServletRequest request = ServletUtils.getRequest();
+        return request != null && UserConstants.CLIENT_TYPE_ADMIN.equalsIgnoreCase(StringUtils.trim(request.getHeader(UserConstants.CLIENT_TYPE_HEADER)));
+    }
+
+    /**
+     * 是否网站会员账号（角色 option_member，且不是超级管理员）
+     */
+    private boolean isMemberAccount(LoginUser loginUser)
+    {
+        SysUser user = loginUser.getUser();
+        if (user == null || user.isAdmin() || user.getRoles() == null)
+        {
+            return false;
+        }
+        return user.getRoles().stream().anyMatch(role -> UserConstants.MEMBER_ROLE_KEY.equals(role.getRoleKey()));
     }
 }
