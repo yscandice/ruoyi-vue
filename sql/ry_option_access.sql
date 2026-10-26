@@ -309,6 +309,12 @@ from (
   union all select 'academy', '学堂', '/api/member/academy,/api/member/academy/**', 'option:academy:', 'REALTIME', 'REALTIME', 7, '教学内容不怕延迟'
   union all select 'update', '更新', '/api/member/updates/**', 'option:update:', 'REALTIME', 'REALTIME', 9, '产品更新内容'
   union all select 'settings', '设置', '/api/member/settings,/api/member/settings/**,/api/member/profile,/api/member/notifications,/api/member/notifications/**,/api/member/updates,/api/member/updates/seen,/api/member/password,/api/member/avatar,/api/member/referrals,/api/member/push,/api/member/api-keys,/api/member/advisory-contact', null, 'SELF', 'SELF', 8, '本人数据，不走同步'
-  union all select 'manage', '管理接口', '/api/member/login,/api/member/today/snapshot', null, 'REALTIME', 'DENY', 0, '同步账号登录与手动导入，接口本身限管理员；盘后版直接拒绝'
+  union all select 'manage', '管理接口', '/api/member/today/snapshot', null, 'REALTIME', 'DENY', 0, '手动导入，接口本身限管理员；盘后版直接拒绝（同步账号登录已移到后台 /option/session/login）'
 ) t
 where not exists (select 1 from option_access_policy p where p.resource_code = t.resource_code);
+
+-- loginFeatur：会员路径 /api/member/login 已删除（同步账号登录改由后台「OSM 会话」菜单调 /option/session/login），旧库同步去掉该路径
+update option_access_policy
+   set path_pattern = '/api/member/today/snapshot',
+       remark = '手动导入，接口本身限管理员；盘后版直接拒绝（同步账号登录已移到后台 /option/session/login）'
+ where resource_code = 'manage' and path_pattern = '/api/member/login,/api/member/today/snapshot';

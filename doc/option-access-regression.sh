@@ -179,8 +179,8 @@ req "$AD" PUT /option/member/9001/paid '{"paidUntil":null}' >/dev/null; acc "$TR
 t C03 "设置 / 取消付费" "设置后 $P1/$PV1，取消后 $P2/$PV2" '[ "$P1/$PV1/$P2/$PV2" = "PAID/REALTIME/DELAYED/DELAYED" ]'
 
 echo "===== 隐私与安全（第 11 节、步骤 2、步骤 9） ====="
-req "$TP" POST /api/member/login '{"email":"x@example.com","password":"x"}' >/dev/null
-t A15 "会员调用 POST /api/member/login" "返回 code=$(code)（$(msg)）" '[ "$(code)" = "403" ]'
+req "$TP" POST /option/session/login '{"email":"x@example.com","password":"x"}' >/dev/null
+t A15 "会员调用 POST /option/session/login（同步账号登录，原 /api/member/login 已删除）" "返回 code=$(code)（$(msg)）" '[ "$(code)" = "403" ]'
 SYNC_NAME=$(sql "select json_unquote(json_extract(payload,'$.sharer.name')) from option_info_referral order by version_id desc limit 1")
 SYNC_CODE=$(sql "select json_unquote(json_extract(payload,'$.referral.code')) from option_info_referral order by version_id desc limit 1")
 req "$TE" GET /api/member/referrals >/dev/null; REF=$(j /tmp/rb 'd.get("data")')

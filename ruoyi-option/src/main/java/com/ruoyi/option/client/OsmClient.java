@@ -77,7 +77,16 @@ public class OsmClient
         }
         catch (HttpStatusCodeException e)
         {
-            throw new ServiceException("OSM 登录失败（HTTP " + e.getStatusCode().value() + "）");
+            int code = e.getStatusCode().value();
+            if (code == 400 || code == 401 || code == 403)
+            {
+                throw new ServiceException("OSM 登录失败：邮箱或密码错误（HTTP " + code + "）");
+            }
+            if (code == 429)
+            {
+                throw new ServiceException("OSM 登录太频繁，请稍后再试（HTTP 429）");
+            }
+            throw new ServiceException("OSM 登录失败（HTTP " + code + "）");
         }
         catch (ResourceAccessException e)
         {

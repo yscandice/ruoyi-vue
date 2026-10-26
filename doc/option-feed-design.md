@@ -70,7 +70,7 @@ Quartz（每分钟）optionSyncTask.syncFeed()
 |---|---|---|---|
 | POST | /option/session/login | option:session:login | {email,password} 登录 OSM，Cookie 存 Redis |
 | DELETE | /option/session/logout | option:session:login | 删除 Cookie |
-| GET | /option/session/status | 登录即可 | 会话与同步状态 |
+| GET | /option/session/status | option:session:status | 会话与同步状态（后台「会员管理 → OSM 会话」菜单） |
 | GET | /option/today/feed | 登录即可 | 完整 feed，与 OSM 结构一致；ETag/304、X-Feed-Generated-At、X-Feed-Sync-Id |
 | GET | /option/today/feed/{group} | 登录即可 | 分组 feed，ETag/304 |
 | GET | /option/today/meta | 登录即可 | 当前 syncId、各分组 ETag、分组定义（AjaxResult） |
