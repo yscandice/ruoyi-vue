@@ -56,8 +56,9 @@ public class OptionSessionController extends BaseController
     }
 
     /**
-     * 会话与同步状态
+     * 会话与同步状态（仅后台「OSM 会话」菜单权限可查）
      */
+    @PreAuthorize("@ss.hasPermi('option:session:status')")
     @GetMapping("/status")
     public AjaxResult status()
     {

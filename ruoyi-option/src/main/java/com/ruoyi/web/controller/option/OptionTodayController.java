@@ -10,24 +10,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.ruoyi.common.annotation.Log;
-import com.ruoyi.common.annotation.RateLimiter;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.enums.BusinessType;
-import com.ruoyi.common.enums.LimitType;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.option.constant.OptionFeedConstants;
 import com.ruoyi.option.service.IOptionFeedCacheService;
 import com.ruoyi.option.service.IOptionFeedSyncService;
 import com.ruoyi.option.service.IOptionResourceService;
-import com.ruoyi.option.service.IOptionSessionService;
 import com.ruoyi.option.utils.OptionJson;
 
 /**
@@ -42,9 +38,6 @@ import com.ruoyi.option.utils.OptionJson;
 public class OptionTodayController extends BaseController
 {
     @Autowired
-    private IOptionSessionService sessionService;
-
-    @Autowired
     private IOptionFeedCacheService feedCacheService;
 
     @Autowired
@@ -52,25 +45,6 @@ public class OptionTodayController extends BaseController
 
     @Autowired
     private IOptionResourceService resourceService;
-
-    /**
-     * 登录 OSM 同步账号（Cookie 存入 Redis，供定时同步使用）
-     * 
-     * 这是同步账号的上游登录，只有后台管理员能调用，会员调用返回 403（会员登录走若依 /login）
-     */
-    @PreAuthorize("@ss.hasRole('admin')")
-    @Log(title = "OSM会话", businessType = BusinessType.GRANT)
-    @RateLimiter(time = 60, count = 5, limitType = LimitType.IP)
-    @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Map<String, Object> login(@RequestBody LoginRequest body)
-    {
-        if (body == null || StringUtils.isEmpty(body.getEmail()) || StringUtils.isEmpty(body.getPassword()))
-        {
-            throw new ServiceException("email 和 password 必填");
-        }
-        sessionService.login(body.getEmail(), body.getPassword());
-        return Map.of("authenticated", true);
-    }
 
     @GetMapping("/feed")
     public void feed(HttpServletRequest request, HttpServletResponse response) throws Exception
@@ -156,36 +130,6 @@ public class OptionTodayController extends BaseController
             throws Exception
     {
         OptionResourceController.write(resourceService.getView(resource, date), request, response);
-    }
-
-    /**
-     * 登录参数
-     */
-    public static class LoginRequest
-    {
-        private String email;
-
-        private String password;
-
-        public String getEmail()
-        {
-            return email;
-        }
-
-        public void setEmail(String email)
-        {
-            this.email = email;
-        }
-
-        public String getPassword()
-        {
-            return password;
-        }
-
-        public void setPassword(String password)
-        {
-            this.password = password;
-        }
     }
 
     /**
